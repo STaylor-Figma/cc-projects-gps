@@ -214,6 +214,8 @@ body {
   border-radius: 40px;
   overflow: hidden;
   position: relative;
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
   box-shadow:
     0 2px 4px rgba(0,0,0,0.04),
     0 8px 16px rgba(0,0,0,0.08),
@@ -2380,8 +2382,17 @@ function populateCard(p) {
 
 var _navConfirmProject = null;
 
+function closeAllPanels() {
+  closeNavDrawer();
+  closeShareSheet();
+  document.getElementById('navConfirmOverlay').classList.remove('open');
+  _navConfirmProject = null;
+}
+
 function openMaps(p) {
-  /* Show leave-app confirmation before opening external Maps URL */
+  /* Dismiss everything else before showing confirm */
+  closeNavDrawer();
+  closeShareSheet();
   _navConfirmProject = p;
   document.getElementById('navConfirmAddr').textContent = p.addr;
   document.getElementById('navConfirmOverlay').classList.add('open');
