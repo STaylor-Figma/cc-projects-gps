@@ -1,0 +1,2973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCPI Geolocation — Interactive Prototype</title>
+<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,600,700" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+
+/* ═══════════════════════════════════════════════════════════════════
+   BLUEPRINT DESIGN SYSTEM — TOKEN LAYER
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Primitives: Primary Brand */
+  --primary-50:  #F2FAFE;
+  --primary-100: #CCECF9;
+  --primary-400: #00A1E0;
+  --primary-500: #0C79A8;
+  --primary-600: #185A7D;
+  --primary-700: #01304A;
+
+  /* Primitives: Neutrals */
+  --neutral-0:   #FFFFFF;
+  --neutral-100: #F4F3F2;
+  --neutral-200: #E7E6E5;
+  --neutral-300: #D2CFCD;
+  --neutral-400: #B3B0AD;
+  --neutral-500: #8B8885;
+  --neutral-600: #6B6864;
+  --neutral-700: #4A4F55;
+
+  /* Semantic: Effects */
+  --focus-dropshadow:         0 0 4px 2px #185A7D;
+  --focus-dropshadow-on-dark: 0 0 4px 2px #F2FAFE;
+
+  /* Semantic: Status */
+  --status-error:   #B70900;
+  --status-success: #16A34A;
+  --status-warning: #D97706;
+
+  /* Typography */
+  --font-family-blueprintfont: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-100: 10px;
+  --font-size-200: 12px;
+  --font-size-300: 14px;
+  --font-size-400: 16px;
+  --font-size-500: 18px;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* Spacing */
+  --spacing-100:  4px;
+  --spacing-200:  8px;
+  --spacing-300: 12px;
+  --spacing-400: 16px;
+  --spacing-500: 20px;
+  --spacing-600: 24px;
+
+  /* Radius */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-xl:  20px;
+  --radius-pill: 100px;
+
+  /* Motion */
+  --motion-fast:    150ms;
+  --motion-default: 200ms;
+  --motion-slow:    350ms;
+  --motion-out:     cubic-bezier(0.0, 0.0, 0.2, 1);
+  --motion-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-sheet:   cubic-bezier(0.32, 0.72, 0.00, 1);
+
+  /* CCPI Component Tokens */
+  --pin-urgent:   var(--status-error);
+  --pin-matched:  var(--status-warning);
+  --pin-active:   var(--status-success);
+  --pin-planning: var(--primary-500);
+  --pin-inactive: var(--neutral-400);
+
+  --badge-bg-urgent:   #FEF2F2; --badge-tx-urgent:   var(--status-error);
+  --badge-bg-matched:  #FFFBEB; --badge-tx-matched:  var(--status-warning);
+  --badge-bg-active:   #F0FDF4; --badge-tx-active:   var(--status-success);
+  --badge-bg-planning: var(--primary-50); --badge-tx-planning: var(--primary-600);
+  --badge-bg-inactive: var(--neutral-200); --badge-tx-inactive: var(--neutral-600);
+
+  --surface-primary:   var(--neutral-0);
+  --surface-secondary: var(--neutral-100);
+  --text-primary:      var(--neutral-700);
+  --text-secondary:    var(--neutral-600);
+  --text-tertiary:     var(--neutral-500);
+  --border-default:    rgba(0,0,0,0.10);
+  --border-subtle:     rgba(0,0,0,0.06);
+}
+
+/* ── Global Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-family-blueprintfont);
+  background: var(--neutral-100);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 16px var(--spacing-400) 40px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEW TOGGLE BAR
+   ═══════════════════════════════════════════════════════════════════ */
+.view-toggle-bar {
+  display: flex;
+  gap: var(--spacing-200);
+  background: var(--neutral-0);
+  border: 1.5px solid var(--neutral-200);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  margin-bottom: var(--spacing-400);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 16px;
+  z-index: 1000;
+}
+
+.vtb__btn {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-200);
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--motion-default) var(--motion-out);
+  letter-spacing: 0.1px;
+}
+
+.vtb__btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.vtb__btn:hover { color: var(--primary-600); }
+.vtb__btn--active {
+  background: var(--primary-700);
+  color: var(--neutral-0);
+}
+.vtb__btn--active:hover { background: var(--primary-600); color: var(--neutral-0); }
+.vtb__btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAGE HEADINGS + STEP NAV
+   ═══════════════════════════════════════════════════════════════════ */
+.prototype-heading {
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  text-align: center;
+  letter-spacing: -0.2px;
+}
+
+.prototype-subtitle {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: var(--spacing-200);
+}
+
+.step-nav {
+  display: flex;
+  gap: var(--spacing-200);
+  justify-content: center;
+  margin-bottom: var(--spacing-200);
+}
+
+.step-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--neutral-200);
+  border: 1.5px solid var(--border-default);
+  cursor: pointer;
+  transition: background var(--motion-default) var(--motion-out), transform var(--motion-default) var(--motion-spring);
+}
+.step-dot:hover  { background: var(--neutral-300); }
+.step-dot.active { background: var(--primary-500); border-color: var(--primary-500); transform: scale(1.3); }
+.step-dot:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+
+.step-label {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: var(--spacing-300);
+  min-height: 32px;
+  line-height: 1.5;
+  max-width: 380px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHONE SHELL
+   ═══════════════════════════════════════════════════════════════════ */
+.phone-shell {
+  width: 375px;
+  max-width: 100%;
+  height: 740px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.04),
+    0 8px 16px rgba(0,0,0,0.08),
+    0 24px 48px rgba(0,0,0,0.14);
+}
+
+.phone-notch {
+  width: 120px; height: 28px;
+  background: var(--primary-700);
+  border-radius: 0 0 18px 18px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 40;
+}
+
+.phone-status-bar {
+  height: 20px;
+  background: var(--primary-700);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-600);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: rgba(255,255,255,0.90);
+  letter-spacing: 0.2px;
+  position: relative;
+  z-index: 5;
+}
+
+/* ── App Nav (Blueprint Header organism) ── */
+.app-nav {
+  height: 52px;
+  background: var(--primary-700);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-400);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  z-index: 5;
+}
+
+.app-nav__title {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  color: var(--neutral-0);
+  letter-spacing: -0.1px;
+  flex: 1;
+  text-align: center;
+}
+
+/* Blueprint HeaderButton molecule */
+.bp-header-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.80);
+  transition: background var(--motion-fast) var(--motion-out), color var(--motion-fast) var(--motion-out);
+}
+.bp-header-btn:hover  { background: rgba(255,255,255,0.10); color: var(--neutral-0); }
+.bp-header-btn:active { background: rgba(255,255,255,0.18); }
+.bp-header-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow-on-dark); }
+.bp-header-btn svg { width: 20px; height: 20px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHONE MAP AREA — Leaflet host
+   ═══════════════════════════════════════════════════════════════════ */
+.map-area {
+  position: relative;
+  /* 740 - 28(notch) - 20(status) - 52(nav) - 52(tabbar) = 588 */
+  height: 588px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+#phoneMapEl {
+  width: 100%;
+  height: 100%;
+}
+
+/* Leaflet overrides inside phone shell */
+.map-area .leaflet-container { background: #EAE7DF; }
+.map-area .leaflet-control-attribution { display: none; }
+
+/* User location divIcon */
+.user-loc-outer {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(0,161,224,0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: userPulse 3s ease-in-out infinite;
+}
+.user-loc-inner {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: #00A1E0;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 0 0 1.5px #00A1E0;
+}
+@keyframes userPulse {
+  0%, 100% { transform: scale(1.0); opacity: 0.70; }
+  50%       { transform: scale(1.5); opacity: 0.20; }
+}
+
+/* Remove browser focus outline from Leaflet marker divIcons */
+.leaflet-marker-icon:focus { outline: none; }
+
+/* Map overlays (legend, radius badge) — above Leaflet layers */
+.map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: var(--surface-primary);
+  border-radius: var(--radius-md);
+  padding: 6px var(--spacing-300);
+  display: flex;
+  gap: var(--spacing-300);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 900;
+  pointer-events: none;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  letter-spacing: 0.2px;
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.radius-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--surface-primary);
+  border-radius: var(--radius-md);
+  padding: 5px var(--spacing-300);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-100);
+  letter-spacing: 0.1px;
+  pointer-events: none;
+}
+
+/* Cluster markers (shown when zoomed out — national view) */
+.cluster-marker {
+  border-radius: 50%;
+  background: var(--primary-500);
+  border: 3px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family-blueprintfont);
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(1,48,74,0.32), 0 1px 3px rgba(0,0,0,0.18);
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+.cluster-marker:hover { transform: scale(1.12); }
+.cluster-marker--sm { width: 34px; height: 34px; font-size: 12px; border-width: 2.5px; }
+.cluster-marker--md { width: 42px; height: 42px; font-size: 14px; }
+.cluster-marker--lg { width: 52px; height: 52px; font-size: 16px; }
+
+/* Legend states */
+.map-legend--clustered .legend-cluster-hint { display: flex; }
+.map-legend--clustered .legend-pins         { display: none; }
+.legend-cluster-hint {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-200);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.legend-pins { display: flex; gap: var(--spacing-300); }
+
+/* Map locate button */
+.map-locate-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 900;
+  color: var(--primary-500);
+  transition: all var(--motion-fast) var(--motion-out);
+}
+.map-locate-btn:hover { background: var(--primary-50); border-color: var(--primary-100); }
+.map-locate-btn:active { background: var(--primary-100); }
+.map-locate-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.map-locate-btn svg { width: 18px; height: 18px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROJECT CARD — Bottom Sheet (Blueprint DrawerModal pattern)
+   z-index 30 > tab-bar 25 so card appears above tab bar
+   bottom: 62px = 52px tab + 10px breathing gap
+   ═══════════════════════════════════════════════════════════════════ */
+.project-card {
+  position: absolute;
+  bottom: 62px;
+  left: 0; right: 0;
+  background: var(--surface-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--spacing-300) var(--spacing-500) var(--spacing-500);
+  transform: translateY(100%);
+  transition: transform var(--motion-slow) var(--motion-sheet);
+  z-index: 30;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.10);
+  max-height: 390px;
+  overflow-y: auto;
+}
+
+.project-card.visible { transform: translateY(0); }
+
+.card-handle {
+  width: 36px; height: 4px;
+  background: var(--neutral-300);
+  border-radius: 2px;
+  margin: 0 auto var(--spacing-300);
+}
+
+.card-close-btn {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  top: var(--spacing-300);
+  right: var(--spacing-400);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--motion-fast) var(--motion-out);
+}
+.card-close-btn:hover { background: var(--neutral-200); color: var(--text-primary); }
+.card-close-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.card-close-btn svg { width: 16px; height: 16px; }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-200);
+  margin-bottom: var(--spacing-100);
+  padding-right: 28px;
+}
+
+.card-name {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: 1.3;
+  flex: 1;
+  letter-spacing: -0.1px;
+}
+
+/* Blueprint Badge Atom */
+.bp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--spacing-300);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+.bp-badge--urgent   { background: var(--badge-bg-urgent);   color: var(--badge-tx-urgent); }
+.bp-badge--matched  { background: var(--badge-bg-matched);  color: var(--badge-tx-matched); }
+.bp-badge--active   { background: var(--badge-bg-active);   color: var(--badge-tx-active); }
+.bp-badge--planning { background: var(--badge-bg-planning); color: var(--badge-tx-planning); }
+.bp-badge--inactive { background: var(--badge-bg-inactive); color: var(--badge-tx-inactive); }
+
+.card-meta {
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.card-addr {
+  font-size: var(--font-size-200);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-200);
+  line-height: 1.4;
+}
+
+/* Match score bar */
+.match-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-200);
+  margin-bottom: var(--spacing-200);
+}
+.match-label {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 52px;
+}
+.match-track {
+  flex: 1;
+  height: 6px;
+  background: var(--neutral-200);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.match-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--status-success);
+  transition: width var(--motion-slow) var(--motion-out);
+}
+.match-score-val {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--status-success);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* Blueprint Pill Molecule */
+.card-tags { display: flex; gap: var(--spacing-100); flex-wrap: wrap; margin-bottom: var(--spacing-300); }
+.bp-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--spacing-300);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  letter-spacing: 0.2px;
+}
+.bp-pill--matched {
+  background: var(--badge-bg-active);
+  color: var(--badge-tx-active);
+  border-color: rgba(22,163,74,0.20);
+}
+
+/* Blueprint Button Molecule */
+.card-actions { display: flex; gap: var(--spacing-200); }
+.bp-button {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  height: 38px;
+  padding: 0 var(--spacing-200);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-blueprintfont);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-100);
+  letter-spacing: 0.1px;
+  transition: background var(--motion-fast) var(--motion-out);
+}
+.bp-button:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.bp-button--primary  { background: var(--primary-500); color: var(--neutral-0); }
+.bp-button--primary:hover  { background: var(--primary-600); }
+.bp-button--primary:active { background: var(--primary-700); }
+.bp-button--secondary {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default) !important;
+}
+.bp-button--secondary:hover  { background: var(--neutral-200); }
+.bp-button--secondary:active { background: var(--neutral-300); }
+.bp-button svg { flex-shrink: 0; width: 13px; height: 13px; }
+
+/* Navigate toast */
+.nav-toast {
+  position: absolute;
+  bottom: 110px;
+  left: var(--spacing-400);
+  right: var(--spacing-400);
+  background: var(--primary-700);
+  color: var(--neutral-0);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-300) var(--spacing-400);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  box-shadow: 0 4px 16px rgba(1,48,74,0.30);
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-200);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--motion-default) var(--motion-out), transform var(--motion-default) var(--motion-out);
+  pointer-events: none;
+}
+.nav-toast.visible { opacity: 1; transform: translateY(0); }
+.nav-toast svg { flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PERMISSION MODAL
+   ═══════════════════════════════════════════════════════════════════ */
+.perm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(1,48,74,0.55);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-default) var(--motion-out);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.perm-overlay.visible { opacity: 1; pointer-events: auto; }
+
+.perm-card {
+  background: var(--surface-primary);
+  border-radius: var(--radius-xl);
+  padding: 28px var(--spacing-600) var(--spacing-500);
+  width: 304px;
+  text-align: center;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.24);
+}
+
+.perm-icon {
+  width: 52px; height: 52px;
+  background: var(--primary-50);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--spacing-400);
+}
+.perm-icon svg { width: 26px; height: 26px; color: var(--primary-500); }
+
+.perm-title {
+  font-size: var(--font-size-500);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-200);
+  letter-spacing: -0.2px;
+}
+.perm-desc {
+  font-size: var(--font-size-300);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-500);
+  line-height: 1.55;
+}
+.perm-actions { display: flex; flex-direction: column; gap: var(--spacing-200); }
+.perm-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-blueprintfont);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--motion-fast) var(--motion-out), color var(--motion-fast) var(--motion-out);
+}
+.perm-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.perm-btn--primary  { background: var(--primary-500); color: var(--neutral-0); }
+.perm-btn--primary:hover  { background: var(--primary-600); }
+.perm-btn--primary:active { background: var(--primary-700); }
+.perm-btn--ghost    { background: transparent; color: var(--text-secondary); }
+.perm-btn--ghost:hover { color: var(--text-primary); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BOTTOM TAB BAR — Blueprint TabGroup organism
+   primary-50 background per design spec
+   ═══════════════════════════════════════════════════════════════════ */
+.tab-bar {
+  height: 52px;
+  display: flex;
+  border-top: 1.5px solid var(--primary-100);
+  background: var(--primary-50);
+  z-index: 25;
+  position: relative;
+}
+
+.bp-tab {
+  all: unset;
+  box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  gap: 2px;
+  font-family: var(--font-family-blueprintfont);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  position: relative;
+  padding-top: 2px;
+  transition: color var(--motion-fast) var(--motion-out);
+}
+.bp-tab::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 24px; height: 2.5px;
+  background: var(--primary-500);
+  border-radius: 0 0 2px 2px;
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--motion-out);
+}
+.bp-tab:hover { color: var(--primary-500); }
+.bp-tab.active { color: var(--primary-500); }
+.bp-tab.active::after { opacity: 1; }
+.bp-tab:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.bp-tab svg { width: 18px; height: 18px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLET SHELL
+   ═══════════════════════════════════════════════════════════════════ */
+.tablet-shell {
+  width: 820px;
+  max-width: 100%;
+  height: 580px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.04),
+    0 8px 16px rgba(0,0,0,0.08),
+    0 24px 48px rgba(0,0,0,0.14);
+}
+
+.tablet-header {
+  height: 52px;
+  background: var(--primary-700);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-300);
+  padding: 0 var(--spacing-400);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.tablet-header__title {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  color: var(--neutral-0);
+  letter-spacing: -0.1px;
+  flex: 1;
+}
+
+.tablet-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-200);
+}
+
+.radius-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: rgba(255,255,255,0.80);
+  border: 1px solid rgba(255,255,255,0.20);
+  background: rgba(255,255,255,0.08);
+  letter-spacing: 0.2px;
+}
+.radius-chip svg { width: 11px; height: 11px; }
+
+.tablet-user-chip {
+  all: unset;
+  box-sizing: border-box;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  color: var(--neutral-0);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-blueprintfont);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background var(--motion-fast) var(--motion-out);
+}
+.tablet-user-chip:hover { background: var(--primary-400); }
+.tablet-user-chip:focus-visible { outline: none; box-shadow: var(--focus-dropshadow-on-dark); }
+
+/* Tablet body — split layout */
+.tablet-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Left Panel ── */
+.tablet-left {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-default);
+  background: var(--surface-primary);
+  z-index: 2;
+  position: relative;
+}
+
+.tablet-search {
+  padding: var(--spacing-300) var(--spacing-300) 0;
+  flex-shrink: 0;
+}
+
+.tablet-search__input {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--spacing-300) 0 36px;
+  border: 1.5px solid var(--neutral-300);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-300);
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='6' cy='6' r='4' stroke='%23B3B0AD' stroke-width='1.4'/%3E%3Cpath d='M9.5 9.5l3 3' stroke='%23B3B0AD' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  transition: border-color var(--motion-fast) var(--motion-out);
+}
+.tablet-search__input:focus { border-color: var(--primary-500); background-color: var(--neutral-0); }
+.tablet-search__input::placeholder { color: var(--text-tertiary); }
+
+.tablet-filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: var(--spacing-200) var(--spacing-300);
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.tablet-filter-bar::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1.5px solid var(--neutral-200);
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+  transition: all var(--motion-fast) var(--motion-out);
+}
+.filter-chip:hover { border-color: var(--primary-400); color: var(--primary-600); }
+.filter-chip--active {
+  background: var(--primary-50);
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+}
+.filter-chip:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.filter-chip__dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.tablet-list-header {
+  padding: var(--spacing-200) var(--spacing-300) var(--spacing-100);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-tertiary);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.tablet-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.tablet-list::-webkit-scrollbar { width: 4px; }
+.tablet-list::-webkit-scrollbar-track { background: transparent; }
+.tablet-list::-webkit-scrollbar-thumb { background: var(--neutral-200); border-radius: 2px; }
+
+.tablet-project-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px var(--spacing-300);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background var(--motion-fast) var(--motion-out);
+  position: relative;
+}
+.tablet-project-item:hover { background: var(--neutral-100); }
+.tablet-project-item.selected { background: var(--primary-50); }
+.tablet-project-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
+  transition: background var(--motion-fast) var(--motion-out);
+}
+.tablet-project-item.selected::before { background: var(--primary-500); }
+
+.item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-100);
+}
+
+.item-name {
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  line-height: 1.3;
+  flex: 1;
+  letter-spacing: -0.1px;
+}
+
+.item-meta {
+  font-size: var(--font-size-200);
+  color: var(--text-secondary);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.item-dot {
+  color: var(--neutral-300);
+}
+
+/* ── Right Panel (map) ── */
+.tablet-right {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#tabletMapEl {
+  width: 100%;
+  height: 100%;
+}
+
+.tablet-right .leaflet-container { background: #EAE7DF; }
+.tablet-right .leaflet-control-attribution { display: none; }
+
+/* Tablet legend overlay */
+.tablet-map-legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: var(--surface-primary);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  display: flex;
+  gap: var(--spacing-300);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 900;
+  pointer-events: none;
+}
+
+/* ── Tablet Detail Panel (slide-in over left) ── */
+.tablet-detail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--surface-primary);
+  border-right: 1px solid var(--border-default);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform var(--motion-slow) var(--motion-sheet);
+  box-shadow: 2px 0 16px rgba(0,0,0,0.08);
+}
+.tablet-detail.visible { transform: translateX(0); }
+
+.detail-back-btn {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-200);
+  padding: var(--spacing-300) var(--spacing-300) var(--spacing-200);
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary-500);
+  cursor: pointer;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: color var(--motion-fast) var(--motion-out);
+}
+.detail-back-btn:hover { color: var(--primary-600); }
+.detail-back-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.detail-back-btn svg { width: 14px; height: 14px; }
+
+.detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-300);
+}
+.detail-body::-webkit-scrollbar { width: 4px; }
+.detail-body::-webkit-scrollbar-thumb { background: var(--neutral-200); border-radius: 2px; }
+
+.detail-name {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin-bottom: var(--spacing-200);
+  letter-spacing: -0.1px;
+}
+.detail-meta {
+  font-size: var(--font-size-300);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: var(--font-weight-medium);
+}
+.detail-addr {
+  font-size: var(--font-size-200);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-300);
+  line-height: 1.5;
+}
+.detail-section-label {
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-100);
+}
+.detail-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: var(--spacing-300); }
+
+.detail-footer {
+  flex-shrink: 0;
+  padding: var(--spacing-300);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-200);
+}
+
+.detail-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-200);
+  letter-spacing: 0.1px;
+  transition: background var(--motion-fast) var(--motion-out);
+}
+.detail-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.detail-btn--primary  { background: var(--primary-500); color: var(--neutral-0); }
+.detail-btn--primary:hover  { background: var(--primary-600); }
+.detail-btn--secondary {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default) !important;
+}
+.detail-btn--secondary:hover { background: var(--neutral-200); }
+.detail-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* Tablet zoom controls */
+.tablet-zoom-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 900;
+}
+.zoom-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 30px; height: 30px;
+  background: var(--surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 300;
+  transition: all var(--motion-fast) var(--motion-out);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.zoom-btn:hover { background: var(--neutral-100); }
+.zoom-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAV DRAWER — Hamburger slide-in (Blueprint PushDrawerContainer)
+   ═══════════════════════════════════════════════════════════════════ */
+.nav-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+}
+.nav-drawer-overlay.open { pointer-events: auto; }
+
+.nav-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(1,48,74,0.50);
+  opacity: 0;
+  transition: opacity var(--motion-default) var(--motion-out);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.nav-drawer-overlay.open .nav-drawer-backdrop { opacity: 1; }
+
+.nav-drawer {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 264px;
+  background: var(--primary-700);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform var(--motion-slow) var(--motion-sheet);
+  z-index: 1;
+  overflow: hidden;
+}
+.nav-drawer-overlay.open .nav-drawer { transform: translateX(0); }
+
+.nav-drawer__head {
+  padding: 20px 14px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.09);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.nav-drawer__logo-mark {
+  width: 34px; height: 34px;
+  background: var(--primary-500);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  color: var(--neutral-0);
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.nav-drawer__brand { flex: 1; }
+.nav-drawer__brand-name {
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--neutral-0);
+  letter-spacing: -0.1px;
+  line-height: 1.2;
+}
+.nav-drawer__brand-sub {
+  font-size: var(--font-size-100);
+  color: rgba(255,255,255,0.45);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.3px;
+}
+.nav-drawer__close {
+  all: unset;
+  box-sizing: border-box;
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.60);
+  cursor: pointer;
+  transition: all var(--motion-fast) var(--motion-out);
+}
+.nav-drawer__close:hover { background: rgba(255,255,255,0.10); color: var(--neutral-0); }
+.nav-drawer__close:focus-visible { outline: none; box-shadow: var(--focus-dropshadow-on-dark); }
+.nav-drawer__close svg { width: 14px; height: 14px; }
+
+.nav-drawer__section-label {
+  padding: 14px 14px 4px;
+  font-size: var(--font-size-100);
+  font-weight: var(--font-weight-semibold);
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.nav-drawer__item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-medium);
+  color: rgba(255,255,255,0.70);
+  cursor: pointer;
+  transition: all var(--motion-fast) var(--motion-out);
+  border-left: 3px solid transparent;
+  width: 100%;
+}
+.nav-drawer__item:hover { background: rgba(255,255,255,0.07); color: var(--neutral-0); }
+.nav-drawer__item--active {
+  background: rgba(255,255,255,0.10);
+  color: var(--neutral-0);
+  border-left-color: var(--primary-400);
+  font-weight: var(--font-weight-semibold);
+}
+.nav-drawer__item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.25); }
+.nav-drawer__item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.75; }
+.nav-drawer__item--active svg { opacity: 1; }
+.nav-drawer__item-badge {
+  margin-left: auto;
+  background: var(--status-error);
+  color: var(--neutral-0);
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+.nav-drawer__divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 6px 0;
+}
+.nav-drawer__footer {
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,0.09);
+  padding: 12px 14px;
+  flex-shrink: 0;
+}
+.nav-drawer__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-drawer__avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--primary-500);
+  color: var(--neutral-0);
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-drawer__user-name {
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--neutral-0);
+  line-height: 1.2;
+}
+.nav-drawer__user-role {
+  font-size: var(--font-size-100);
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHARE SHEET — Bottom sheet (Blueprint DrawerModal pattern)
+   ═══════════════════════════════════════════════════════════════════ */
+.share-sheet {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 62px;
+  background: var(--surface-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--spacing-300) var(--spacing-500) var(--spacing-400);
+  z-index: 32;
+  transform: translateY(100%);
+  transition: transform var(--motion-slow) var(--motion-sheet);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+}
+.share-sheet.visible { transform: translateY(0); }
+
+.share-sheet__handle {
+  width: 36px; height: 4px;
+  background: var(--neutral-300);
+  border-radius: 2px;
+  margin: 0 auto var(--spacing-300);
+}
+.share-sheet__title {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  letter-spacing: -0.1px;
+}
+.share-sheet__subtitle {
+  font-size: var(--font-size-200);
+  color: var(--text-tertiary);
+  margin-bottom: var(--spacing-500);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.share-sheet__options {
+  display: flex;
+  gap: 20px;
+  margin-bottom: var(--spacing-400);
+}
+.share-option {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.share-option__icon {
+  width: 50px; height: 50px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter var(--motion-fast) var(--motion-out);
+}
+.share-option:hover .share-option__icon { filter: brightness(0.90); }
+.share-option:focus-visible { outline: none; }
+.share-option:focus-visible .share-option__icon { box-shadow: var(--focus-dropshadow); }
+.share-option__icon--blue   { background: var(--primary-500); }
+.share-option__icon--green  { background: #16A34A; }
+.share-option__icon--orange { background: #EA580C; }
+.share-option__icon--gray   { background: var(--neutral-600); }
+.share-option__icon svg { width: 22px; height: 22px; color: var(--neutral-0); }
+.share-option__label {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-align: center;
+  letter-spacing: 0.2px;
+}
+.share-sheet__link-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-200);
+  background: var(--neutral-100);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  margin-bottom: var(--spacing-300);
+}
+.share-link-text {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: var(--font-family-blueprintfont);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.share-copy-btn {
+  all: unset;
+  box-sizing: border-box;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-500);
+  color: var(--neutral-0);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-blueprintfont);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--motion-fast) var(--motion-out);
+}
+.share-copy-btn:hover { background: var(--primary-600); }
+.share-copy-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+.share-dismiss-btn {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-blueprintfont);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--motion-fast) var(--motion-out);
+}
+.share-dismiss-btn:hover { background: var(--neutral-100); color: var(--text-primary); }
+.share-dismiss-btn:focus-visible { outline: none; box-shadow: var(--focus-dropshadow); }
+
+/* Copy success toast (inline, replaces button text) */
+.share-copy-btn.copied { background: #16A34A; }
+
+/* ── Leave-app confirmation sheet ── */
+.nav-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(1,48,74,0.48);
+  backdrop-filter: blur(3px);
+  z-index: 45;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.nav-confirm-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.nav-confirm-card {
+  background: var(--surface-primary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 12px 20px 36px;
+  width: 100%;
+  transform: translateY(100%);
+  transition: transform var(--motion-slow) var(--motion-sheet);
+}
+.nav-confirm-overlay.open .nav-confirm-card { transform: translateY(0); }
+.nav-confirm-handle {
+  width: 36px; height: 4px;
+  background: var(--neutral-300);
+  border-radius: 2px;
+  margin: 0 auto 18px;
+}
+.nav-confirm-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--primary-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.nav-confirm-icon svg { color: var(--primary-500); }
+.nav-confirm-title {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.nav-confirm-body {
+  font-size: var(--font-size-200);
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.nav-confirm-addr {
+  background: var(--neutral-100);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: var(--font-size-200);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 20px;
+}
+.nav-confirm-actions {
+  display: flex;
+  gap: var(--spacing-200);
+}
+.nav-confirm-actions .bp-button { flex: 1; justify-content: center; }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════ VIEW TOGGLE ════════════════ -->
+<div class="view-toggle-bar" role="group" aria-label="View mode">
+  <button class="vtb__btn vtb__btn--active" id="btnPhoneView" type="button" aria-pressed="true">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="3" y="1" width="10" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
+      <circle cx="8" cy="12.5" r="1" fill="currentColor"/>
+      <line x1="6" y1="3" x2="10" y2="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    Phone
+  </button>
+  <button class="vtb__btn" id="btnTabletView" type="button" aria-pressed="false">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="2.5" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/>
+      <circle cx="13" cy="8" r="0.8" fill="currentColor"/>
+    </svg>
+    Tablet
+  </button>
+</div>
+
+
+<!-- ════════════════ PHONE VIEW ════════════════ -->
+<div id="phoneView">
+  <h1 class="prototype-heading">CCPI &mdash; Projects Near Me</h1>
+  <p class="prototype-subtitle">Mark&rsquo;s Workflow &middot; Steps 1&ndash;4 &middot; Phone</p>
+
+  <div class="step-nav" id="stepNav" role="tablist" aria-label="Workflow steps"></div>
+  <p class="step-label" id="stepLabel" aria-live="polite"></p>
+
+  <div class="phone-shell">
+    <div class="phone-notch" aria-hidden="true"></div>
+    <div class="phone-status-bar" aria-hidden="true">
+      <span>9:41</span>
+      <span style="letter-spacing:1px;opacity:0.75">&#9609;&#9609; LTE</span>
+    </div>
+
+    <!-- Blueprint Header organism -->
+    <nav class="app-nav" aria-label="Application navigation">
+      <button class="bp-header-btn" aria-label="Open navigation menu">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span class="app-nav__title">Projects Near Me</span>
+      <button class="bp-header-btn" aria-label="Adjust search radius">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 3v1.5M17 10h-1.5M10 17v-1.5M3 10h1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1" stroke-dasharray="2.5 2" opacity="0.45"/>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- Map Area — Leaflet renders into #phoneMapEl -->
+    <div class="map-area" id="phoneMapWrapper" role="application" aria-label="Project map">
+      <div id="phoneMapEl"></div>
+
+      <!-- Overlays above Leaflet layers -->
+      <div class="map-legend map-legend--clustered" id="phoneLegend" role="note" aria-live="polite">
+        <!-- Cluster mode (zoomed out) -->
+        <span class="legend-cluster-hint" aria-label="15 projects nationwide, zoom in to explore">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <circle cx="6" cy="6" r="5" stroke="#0C79A8" stroke-width="1.5" fill="none"/>
+            <path d="M6 3v3l2 1" stroke="#0C79A8" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          15 projects &mdash; zoom in to explore
+        </span>
+        <!-- Pin mode (zoomed in) -->
+        <span class="legend-pins" aria-label="Pin color legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#B70900" aria-hidden="true"></span>Urgent</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#D97706" aria-hidden="true"></span>Match</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#16A34A" aria-hidden="true"></span>Active</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#0C79A8" aria-hidden="true"></span>Plan</span>
+        </span>
+      </div>
+
+      <div class="radius-badge" role="status" aria-label="Search radius 25 miles">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1" stroke-dasharray="2 1.5"/>
+          <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
+        </svg>
+        25 mi radius
+      </div>
+
+      <button class="map-locate-btn" id="btnReframe" aria-label="Reframe map to show all projects">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 2v2.5M18 10h-2.5M10 18v-2.5M2 10h2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Project Card Bottom Sheet -->
+    <div class="project-card" id="projectCard" role="dialog" aria-modal="true" aria-labelledby="cardName">
+      <div class="card-handle" aria-hidden="true"></div>
+      <button class="card-close-btn" id="btnCardClose" aria-label="Close project card">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <div class="card-header">
+        <div class="card-name" id="cardName"></div>
+        <span class="bp-badge" id="cardBadge" aria-live="polite"></span>
+      </div>
+
+      <div class="card-meta" id="cardMeta"></div>
+      <div class="card-addr" id="cardAddr"></div>
+
+      <div class="match-bar-row">
+        <span class="match-label">Match</span>
+        <div class="match-track" role="meter" aria-valuemin="0" aria-valuemax="100" id="matchTrack">
+          <div class="match-fill" id="matchFill"></div>
+        </div>
+        <span class="match-score-val" id="matchScoreVal"></span>
+      </div>
+
+      <div class="card-tags" id="cardTags" aria-label="Trade categories"></div>
+
+      <div class="card-actions">
+        <button class="bp-button bp-button--primary" id="btnNavigate" type="button">
+          <svg viewBox="0 0 13 13" fill="none" aria-hidden="true">
+            <path d="M1.5 6.5L11 3 7.5 11.5 6 7.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          Navigate
+        </button>
+        <button class="bp-button bp-button--secondary" id="btnSave" type="button" aria-label="Save project">
+          <svg viewBox="0 0 13 13" fill="none" aria-hidden="true">
+            <path d="M3 1.5v10l3.5-2.5L10 11.5v-10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          Save
+        </button>
+        <button class="bp-button bp-button--secondary" type="button" aria-label="Share project">
+          <svg viewBox="0 0 13 13" fill="none" aria-hidden="true">
+            <circle cx="10" cy="2.5" r="1.5" stroke="currentColor" stroke-width="1.3"/>
+            <circle cx="10" cy="10.5" r="1.5" stroke="currentColor" stroke-width="1.3"/>
+            <circle cx="3" cy="6.5" r="1.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M4.5 5.8l4-2.4M4.5 7.2l4 2.4" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+          Share
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigate toast — simulates handoff to native maps -->
+    <div class="nav-toast" id="navToast" role="status" aria-live="polite">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path d="M2 9L15.5 4 11.5 16 9.5 10z" stroke="#00A1E0" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div style="font-weight:700;font-size:13px">Opening in Maps&hellip;</div>
+        <div style="font-size:11px;opacity:0.75" id="navToastAddr">Turn-by-turn directions</div>
+      </div>
+    </div>
+
+    <!-- Permission Modal -->
+    <div class="perm-overlay" id="permOverlay" role="dialog" aria-modal="true" aria-labelledby="permTitle">
+      <div class="perm-card">
+        <div class="perm-icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                  stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <h3 class="perm-title" id="permTitle">See projects near you</h3>
+        <p class="perm-desc">Enable location to discover construction projects on the map, get directions to job sites, and receive alerts for new opportunities nearby.</p>
+        <div class="perm-actions">
+          <button class="perm-btn perm-btn--primary" id="btnEnable" type="button">Enable Location</button>
+          <button class="perm-btn perm-btn--ghost"   id="btnDeny"   type="button">Not Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Sheet — slides up over project card -->
+    <div class="share-sheet" id="shareSheet" role="dialog" aria-modal="true" aria-label="Share project">
+      <div class="share-sheet__handle" aria-hidden="true"></div>
+      <div class="share-sheet__title">Share Project</div>
+      <div class="share-sheet__subtitle" id="shareSheetProjectName">Convention Center Expansion</div>
+
+      <div class="share-sheet__options">
+        <button class="share-option" id="shareEmail" type="button" aria-label="Share via Email">
+          <span class="share-option__icon share-option__icon--blue">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect x="2" y="5" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M2 7l9 6 9-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="share-option__label">Email</span>
+        </button>
+        <button class="share-option" id="shareText" type="button" aria-label="Share via SMS">
+          <span class="share-option__icon share-option__icon--green">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <path d="M4 3h14a2 2 0 012 2v9a2 2 0 01-2 2H8l-5 3V5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="share-option__label">Message</span>
+        </button>
+        <button class="share-option" id="shareBidCenter" type="button" aria-label="Send to Bid Center">
+          <span class="share-option__icon share-option__icon--orange">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <rect x="3" y="8" width="16" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 8V6a4 4 0 018 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="11" cy="13.5" r="1.5" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="share-option__label">Bid Center</span>
+        </button>
+        <button class="share-option" id="shareMore" type="button" aria-label="More share options">
+          <span class="share-option__icon share-option__icon--gray">
+            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+              <circle cx="5" cy="11" r="1.5" fill="currentColor"/>
+              <circle cx="11" cy="11" r="1.5" fill="currentColor"/>
+              <circle cx="17" cy="11" r="1.5" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="share-option__label">More</span>
+        </button>
+      </div>
+
+      <div class="share-sheet__link-row">
+        <span class="share-link-text" id="shareLink">app.constructconnect.com/project/5130/p</span>
+        <button class="share-copy-btn" id="shareCopyBtn" type="button">Copy</button>
+      </div>
+      <button class="share-dismiss-btn" id="shareSheetClose" type="button">Cancel</button>
+    </div>
+
+    <!-- Nav Drawer — hamburger slide-in -->
+    <div class="nav-drawer-overlay" id="navDrawerOverlay" role="dialog" aria-modal="true" aria-label="Navigation menu">
+      <div class="nav-drawer-backdrop" id="navDrawerBackdrop" aria-hidden="true"></div>
+      <div class="nav-drawer">
+        <div class="nav-drawer__head">
+          <div class="nav-drawer__logo-mark" aria-hidden="true">CC</div>
+          <div class="nav-drawer__brand">
+            <div class="nav-drawer__brand-name">ConstructConnect</div>
+            <div class="nav-drawer__brand-sub">PROFESSIONAL</div>
+          </div>
+          <button class="nav-drawer__close" id="navDrawerClose" aria-label="Close navigation menu">
+            <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <nav aria-label="Main navigation">
+          <div class="nav-drawer__section-label">Discover</div>
+          <button class="nav-drawer__item nav-drawer__item--active" type="button" data-nav="nearby">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path d="M7.5 1C4 1 1 4 1 7.5c0 4.7 6.5 8.5 6.5 8.5S14 12.2 14 7.5C14 4 11 1 7.5 1z" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            Projects Near Me
+          </button>
+          <button class="nav-drawer__item" type="button" data-nav="search">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M10.5 10.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Project Search
+          </button>
+
+          <div class="nav-drawer__section-label">My Work</div>
+          <button class="nav-drawer__item" type="button" data-nav="bidcenter">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="2" y="5.5" width="11" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M5 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              <circle cx="7.5" cy="9.5" r="1" fill="currentColor"/>
+            </svg>
+            Bid Center
+            <span class="nav-drawer__item-badge" aria-label="3 unread">3</span>
+          </button>
+          <button class="nav-drawer__item" type="button" data-nav="watchlist">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path d="M3 2v11l4.5-3L12 13V2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+            My Watchlist
+          </button>
+          <button class="nav-drawer__item" type="button" data-nav="bids">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path d="M2.5 11.5l3-8 3 5 2-3 2 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            My Bid Activity
+          </button>
+
+          <div class="nav-drawer__divider" aria-hidden="true"></div>
+          <button class="nav-drawer__item" type="button" data-nav="companies">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="2" y="3" width="11" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M5 6h5M5 8.5h5M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            Company Directory
+          </button>
+          <button class="nav-drawer__item" type="button" data-nav="profile">
+            <svg viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <circle cx="7.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M2 13c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Trade Profile
+          </button>
+        </nav>
+
+        <div class="nav-drawer__footer">
+          <div class="nav-drawer__user">
+            <div class="nav-drawer__avatar" aria-hidden="true">MS</div>
+            <div>
+              <div class="nav-drawer__user-name">Mark Sullivan</div>
+              <div class="nav-drawer__user-role">CCPI Professional</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Tab Bar — Blueprint TabGroup with primary-50 background -->
+    <nav class="tab-bar" aria-label="Main navigation">
+      <button class="bp-tab active" data-tab="map" type="button" aria-current="page">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M3 8l7-5.5L17 8v8a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16V8z" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M7.5 17.5V12h5v5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Map
+      </button>
+      <button class="bp-tab" data-tab="nearby" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M13.5 13.5l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Nearby
+      </button>
+      <button class="bp-tab" data-tab="saved" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M5 2v16l5-3.5L15 18V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+        Saved
+      </button>
+      <button class="bp-tab" data-tab="profile" type="button">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Profile
+      </button>
+    </nav>
+
+    <!-- Leave-app confirmation sheet — shown before opening Maps -->
+    <div class="nav-confirm-overlay" id="navConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="navConfirmTitle">
+      <div class="nav-confirm-card">
+        <div class="nav-confirm-handle" aria-hidden="true"></div>
+        <div class="nav-confirm-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M2 11L16.5 5.5 12.5 18 10.5 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="nav-confirm-title" id="navConfirmTitle">Open in Maps?</div>
+        <div class="nav-confirm-body">You'll leave the app and get directions in Google Maps</div>
+        <div class="nav-confirm-addr" id="navConfirmAddr"></div>
+        <div class="nav-confirm-actions">
+          <button class="bp-button bp-button--default" id="navConfirmCancel" type="button">Cancel</button>
+          <button class="bp-button bp-button--primary" id="navConfirmOpen" type="button">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M1.5 6.5L11 3 7.5 11.5 6 7.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+            Open Maps
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /phone-shell -->
+</div><!-- /phoneView -->
+
+
+<!-- ════════════════ TABLET VIEW ════════════════ -->
+<div id="tabletView" hidden>
+  <h1 class="prototype-heading">CCPI &mdash; Projects Near Me</h1>
+  <p class="prototype-subtitle">Mark&rsquo;s Workflow &middot; Tablet / iPad View &middot; Split Panel</p>
+
+  <div class="tablet-shell">
+
+    <!-- Tablet Header -->
+    <header class="tablet-header" role="banner">
+      <button class="bp-header-btn" aria-label="Open navigation menu">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span class="tablet-header__title">Projects Near Me</span>
+      <div class="tablet-header__right">
+        <button class="bp-header-btn" aria-label="Search">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M13.5 13.5l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="radius-chip" role="status" aria-label="Search radius 25 miles">
+          <svg viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1" stroke-dasharray="2 1.5"/>
+            <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
+          </svg>
+          25 mi
+        </div>
+        <button class="tablet-user-chip" aria-label="User profile">MS</button>
+      </div>
+    </header>
+
+    <!-- Tablet Body: list + map -->
+    <div class="tablet-body">
+
+      <!-- Left: Project List -->
+      <aside class="tablet-left" aria-label="Project list">
+        <div class="tablet-search">
+          <input class="tablet-search__input" type="search"
+                 placeholder="Search projects..." aria-label="Search projects"
+                 id="tabletSearchInput">
+        </div>
+
+        <div class="tablet-filter-bar" role="group" aria-label="Filter projects">
+          <button class="filter-chip filter-chip--active" data-filter="all" type="button">
+            <span class="filter-chip__dot" style="background:var(--neutral-400)"></span>All (15)
+          </button>
+          <button class="filter-chip" data-filter="urgent" type="button">
+            <span class="filter-chip__dot" style="background:#B70900"></span>Urgent
+          </button>
+          <button class="filter-chip" data-filter="matched" type="button">
+            <span class="filter-chip__dot" style="background:#D97706"></span>Match
+          </button>
+          <button class="filter-chip" data-filter="active" type="button">
+            <span class="filter-chip__dot" style="background:#16A34A"></span>Active
+          </button>
+          <button class="filter-chip" data-filter="planning" type="button">
+            <span class="filter-chip__dot" style="background:#0C79A8"></span>Plan
+          </button>
+        </div>
+
+        <div class="tablet-list-header" id="tabletListHeader" aria-live="polite">
+          15 projects found
+        </div>
+
+        <div class="tablet-list" id="tabletProjectList" role="list"></div>
+      </aside>
+
+      <!-- Right: Map -->
+      <div class="tablet-right" role="application" aria-label="Project map">
+        <div id="tabletMapEl"></div>
+
+        <div class="tablet-map-legend" role="note" aria-label="Pin color legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#B70900"></span>Urgent</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#D97706"></span>Match</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#16A34A"></span>Active</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#0C79A8"></span>Plan</span>
+        </div>
+
+        <!-- Zoom controls (tablet shows manual zoom) -->
+        <div class="tablet-zoom-controls" aria-label="Map zoom controls">
+          <button class="zoom-btn" id="tabletZoomIn"  aria-label="Zoom in">+</button>
+          <button class="zoom-btn" id="tabletZoomOut" aria-label="Zoom out">&minus;</button>
+        </div>
+      </div>
+
+      <!-- Detail Panel (slides in over left panel) -->
+      <div class="tablet-detail" id="tabletDetail" role="dialog" aria-labelledby="detailName" aria-modal="false">
+        <button class="detail-back-btn" id="detailBackBtn" type="button">
+          <svg viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Back to list
+        </button>
+
+        <div class="detail-body">
+          <div class="detail-name" id="detailName"></div>
+          <span class="bp-badge" id="detailBadge" style="margin-bottom:12px;display:inline-flex"></span>
+          <div class="detail-meta" id="detailMeta"></div>
+          <div class="detail-addr" id="detailAddr"></div>
+
+          <div class="match-bar-row">
+            <span class="match-label">Match</span>
+            <div class="match-track" id="detailMatchTrack">
+              <div class="match-fill" id="detailMatchFill"></div>
+            </div>
+            <span class="match-score-val" id="detailMatchVal"></span>
+          </div>
+
+          <div class="detail-section-label">Trade Categories</div>
+          <div class="detail-tags" id="detailTags"></div>
+        </div>
+
+        <div class="detail-footer">
+          <button class="detail-btn detail-btn--primary" id="detailNavBtn" type="button">
+            <svg viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M1.5 6.5L11 3 7.5 11.5 6 7.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+            Navigate to Site
+          </button>
+          <button class="detail-btn detail-btn--secondary" type="button">
+            <svg viewBox="0 0 13 13" fill="none" aria-hidden="true">
+              <path d="M3 1.5v10l3.5-2.5L10 11.5v-10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            </svg>
+            Save Project
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /tablet-body -->
+  </div><!-- /tablet-shell -->
+</div><!-- /tabletView -->
+
+
+<!-- Leaflet JS from cdnjs (no credentials in URL) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PROJECT DATA (sourced from sample_project_data.json)
+   Priority: 1-urgent(days<=7) 2-matched(score>=70) 3-active 4-planning 5-inactive
+   Size: >$10M=lg  $1M-$10M=md  <$1M=sm
+   ═══════════════════════════════════════════════════════════════ */
+var PROJECTS = [
+  { name:'Mercy Hospital Expansion',         gc:'Turner Construction',      val:'$12.4M', valN:12.4, phase:'bidding',  days:3,    bid:'Apr 4, 2026',  dist:'2.4 mi',  match:87, addr:'4500 Memorial Dr, Houston TX',       docs:12, lat:29.7604, lng:-95.3698 },
+  { name:'Peachtree Plaza Renovation',       gc:'Hensel Phelps',            val:'$8.2M',  valN:8.2,  phase:'bidding',  days:5,    bid:'Apr 6, 2026',  dist:'4.1 mi',  match:72, addr:'230 Peachtree St NW, Atlanta GA',     docs:8,  lat:33.7490, lng:-84.3880 },
+  { name:'Lakeshore Office Tower',           gc:'Skanska USA',              val:'$24M',   valN:24,   phase:'active',   days:null, bid:null,           dist:'3.8 mi',  match:91, addr:'200 E Randolph St, Chicago IL',       docs:23, lat:41.8781, lng:-87.6298 },
+  { name:'Westside Elementary School',       gc:'McCarthy Building',        val:'$6.5M',  valN:6.5,  phase:'active',   days:null, bid:null,           dist:'5.2 mi',  match:65, addr:'1200 Wilshire Blvd, Los Angeles CA', docs:6,  lat:34.0522, lng:-118.2437 },
+  { name:'Hudson Yards Condominiums',        gc:'Balfour Beatty',           val:'$18M',   valN:18,   phase:'planning', days:null, bid:null,           dist:'7.8 mi',  match:45, addr:'500 W 33rd St, New York NY',         docs:3,  lat:40.7128, lng:-74.0060 },
+  { name:'Central Library Annex',            gc:'Brasfield & Gorrie',       val:'$4.2M',  valN:4.2,  phase:'planning', days:null, bid:null,           dist:'6.1 mi',  match:58, addr:'10 W 14th Ave, Denver CO',           docs:5,  lat:39.7392, lng:-104.9903 },
+  { name:'Waterfront Apartments Phase 1',    gc:'Cadence McShane',          val:'$3.1M',  valN:3.1,  phase:'completed',days:null, bid:null,           dist:'4.9 mi',  match:20, addr:'1200 Western Ave, Seattle WA',       docs:0,  lat:47.6062, lng:-122.3321 },
+  { name:'Fair Park Sports Complex',         gc:'Gilbane Building',         val:'$15.6M', valN:15.6, phase:'bidding',  days:9,    bid:'Apr 10, 2026', dist:'6.7 mi',  match:83, addr:'3809 Grand Ave, Dallas TX',          docs:15, lat:32.7767, lng:-96.7970 },
+  { name:'Brickell Mixed-Use Development',   gc:'Harvey Builders',          val:'$32M',   valN:32,   phase:'planning', days:null, bid:null,           dist:'8.3 mi',  match:76, addr:'1400 Brickell Bay Dr, Miami FL',     docs:7,  lat:25.7617, lng:-80.1918 },
+  { name:'UCSF Medical Center Parking',      gc:'Vaughn Construction',      val:'$9.8M',  valN:9.8,  phase:'active',   days:null, bid:null,           dist:'3.2 mi',  match:68, addr:'505 Parnassus Ave, San Francisco CA',docs:10, lat:37.7749, lng:-122.4194 },
+  { name:'Back Bay Waterworks Renovation',   gc:'Pepper Lawson',            val:'$5.4M',  valN:5.4,  phase:'bidding',  days:2,    bid:'Apr 3, 2026',  dist:'5.5 mi',  match:78, addr:'401 Beacon St, Boston MA',           docs:9,  lat:42.3601, lng:-71.0589 },
+  { name:'Scottsdale Town Center Retail',    gc:'Tellepsen Builders',       val:'$11.2M', valN:11.2, phase:'planning', days:null, bid:null,           dist:'9.1 mi',  match:62, addr:'7014 E Camelback Rd, Scottsdale AZ', docs:4,  lat:33.4484, lng:-112.0740 },
+  { name:'East Nashville Industrial',        gc:'KBR',                      val:'$7.6M',  valN:7.6,  phase:'active',   days:null, bid:null,           dist:'10.2 mi', match:55, addr:'1400 Dickerson Pike, Nashville TN',  docs:11, lat:36.1627, lng:-86.7816 },
+  { name:'South End Office Buildout',        gc:'Satterfield & Pontikes',   val:'$19.5M', valN:19.5, phase:'bidding',  days:7,    bid:'Apr 8, 2026',  dist:'12.4 mi', match:89, addr:'2400 South Blvd, Charlotte NC',     docs:18, lat:35.2271, lng:-80.8431 },
+  { name:'Convention Center Expansion',      gc:'Webcor Builders',          val:'$45M',   valN:45,   phase:'planning', days:null, bid:null,           dist:'1.8 mi',  match:94, addr:'500 E Cesar Chavez St, Austin TX',   docs:2,  lat:30.2672, lng:-97.7431 }
+];
+
+/* User location — South Austin (South Congress area, ~7mi from Convention Center) */
+var USER_LAT = 30.2150;
+var USER_LNG = -97.8200;
+
+/* ── Pin priority + color ── */
+var PIN_COLORS = {
+  urgent:   '#B70900',
+  matched:  '#D97706',
+  active:   '#16A34A',
+  planning: '#0C79A8',
+  inactive: '#B3B0AD'
+};
+
+function pinPriority(p) {
+  if (p.days !== null && p.days <= 7) return 'urgent';
+  if (p.match >= 70) return 'matched';
+  if (p.phase === 'active') return 'active';
+  if (p.phase === 'planning') return 'planning';
+  return 'inactive';
+}
+
+function pinRadius(p) {
+  return p.valN > 10 ? 9 : p.valN >= 1 ? 7 : 5;
+}
+
+/* Pre-compute priority for each project */
+PROJECTS.forEach(function(p) { p.priority = pinPriority(p); });
+
+/* ═══════════════════════════════════════════════════════════════
+   CLUSTER DATA — pre-grouped US geographic regions
+   Each cluster shows a count bubble when zoomed out.
+   Clicking zooms into that region to reveal individual pins.
+   ═══════════════════════════════════════════════════════════════ */
+var CLUSTER_ZOOM_IN = 5;  /* zoom >= this shows pins; zoom < this shows clusters */
+
+var CLUSTERS_DATA = [
+  /* West Coast: Seattle (6), SF (9), LA (3) */
+  { lat: 38.5,  lng: -121.8, indices: [6, 9, 3] },
+  /* Texas: Houston (0), Dallas (7), Austin (14) */
+  { lat: 30.7,  lng: -96.5,  indices: [0, 7, 14] },
+  /* Southeast: Atlanta (1), Nashville (12), Charlotte (13) */
+  { lat: 35.2,  lng: -82.5,  indices: [1, 12, 13] },
+  /* Northeast: New York (4), Boston (10) */
+  { lat: 41.4,  lng: -72.6,  indices: [4, 10] },
+  /* Mountain/SW: Denver (5), Scottsdale (11) */
+  { lat: 36.8,  lng: -108.2, indices: [5, 11] },
+  /* Midwest: Chicago (2) */
+  { lat: 41.88, lng: -87.63, indices: [2] },
+  /* South Florida: Miami (8) */
+  { lat: 25.76, lng: -80.19, indices: [8] }
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE MAP
+   ═══════════════════════════════════════════════════════════════ */
+var phoneMap = null;
+var phoneMarkers = [];
+var phoneClusterMarkers = [];
+var phoneUserMarker = null;
+var activePhonePinIdx = -1;
+var phonePinsGlobalVisible = false;
+
+function initPhoneMap() {
+  phoneMap = L.map('phoneMapEl', {
+    zoomControl: false,
+    attributionControl: false,
+    scrollWheelZoom: false,
+    tap: true,
+    doubleClickZoom: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd'
+  }).addTo(phoneMap);
+
+  /* User location marker */
+  var userIcon = L.divIcon({
+    className: '',
+    html: '<div class="user-loc-outer"><div class="user-loc-inner"></div></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+  phoneUserMarker = L.marker([USER_LAT, USER_LNG], { icon: userIcon, zIndexOffset: 50 });
+
+  /* Cluster markers */
+  CLUSTERS_DATA.forEach(function(c, ci) {
+    var count = c.indices.length;
+    var sizeClass = count >= 3 ? 'cluster-marker--lg' : count === 2 ? 'cluster-marker--md' : 'cluster-marker--sm';
+    var icon = L.divIcon({
+      className: '',
+      html: '<div class="cluster-marker ' + sizeClass + '">' + count + '</div>',
+      iconSize: count >= 3 ? [52, 52] : count === 2 ? [42, 42] : [34, 34],
+      iconAnchor: count >= 3 ? [26, 26] : count === 2 ? [21, 21] : [17, 17]
+    });
+    var cm = L.marker([c.lat, c.lng], { icon: icon, zIndexOffset: 500 });
+    cm.on('click', function() {
+      /* Zoom into this cluster's bounding box */
+      var pts = c.indices.map(function(i) { return [PROJECTS[i].lat, PROJECTS[i].lng]; });
+      phoneMap.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 8 });
+    });
+    phoneClusterMarkers.push(cm);
+  });
+
+  /* Individual project markers (not added to map yet — zoom mode manages this) */
+  PROJECTS.forEach(function(p, i) {
+    var color = PIN_COLORS[p.priority];
+    var r = pinRadius(p);
+    var m = L.circleMarker([p.lat, p.lng], {
+      radius: r,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2.5,
+      fillOpacity: 1,
+      opacity: 1
+    });
+    m.on('click', function() { pickPin(i); });
+    phoneMarkers.push(m);
+  });
+
+  /* Update layers on zoom */
+  phoneMap.on('zoomend', function() {
+    if (phonePinsGlobalVisible) updatePhoneZoomMode();
+  });
+
+  reframeBounds(phoneMap, true);
+
+  document.getElementById('btnReframe').addEventListener('click', function() {
+    reframeBounds(phoneMap, true);
+    hide('projectCard');
+    clearPin();
+  });
+}
+
+function updatePhoneZoomMode() {
+  var z = phoneMap.getZoom();
+  var legend = document.getElementById('phoneLegend');
+
+  if (z < CLUSTER_ZOOM_IN) {
+    /* CLUSTERED MODE: show clusters, hide individual pins */
+    phoneMarkers.forEach(function(m) {
+      if (phoneMap.hasLayer(m)) phoneMap.removeLayer(m);
+    });
+    if (phoneUserMarker && phoneMap.hasLayer(phoneUserMarker)) phoneMap.removeLayer(phoneUserMarker);
+    phoneClusterMarkers.forEach(function(cm) {
+      if (!phoneMap.hasLayer(cm)) cm.addTo(phoneMap);
+    });
+    if (legend) legend.className = 'map-legend map-legend--clustered';
+  } else {
+    /* PIN MODE: show individual pins, hide clusters */
+    phoneClusterMarkers.forEach(function(cm) {
+      if (phoneMap.hasLayer(cm)) phoneMap.removeLayer(cm);
+    });
+    phoneMarkers.forEach(function(m) {
+      if (!phoneMap.hasLayer(m)) m.addTo(phoneMap);
+    });
+    if (phoneUserMarker && !phoneMap.hasLayer(phoneUserMarker)) phoneUserMarker.addTo(phoneMap);
+    if (legend) legend.className = 'map-legend';
+  }
+}
+
+function reframeBounds(map, showUser) {
+  var bounds = L.latLngBounds(PROJECTS.map(function(p) { return [p.lat, p.lng]; }));
+  bounds.extend([USER_LAT, USER_LNG]);
+  map.fitBounds(bounds, { padding: [32, 32] });
+}
+
+function pinsVisible(v) {
+  phonePinsGlobalVisible = v;
+  if (!v) {
+    /* Hide everything */
+    phoneMarkers.forEach(function(m) { if (phoneMap.hasLayer(m)) phoneMap.removeLayer(m); });
+    phoneClusterMarkers.forEach(function(cm) { if (phoneMap.hasLayer(cm)) phoneMap.removeLayer(cm); });
+    var legend = document.getElementById('phoneLegend');
+    if (legend) legend.className = 'map-legend map-legend--clustered';
+  } else {
+    /* Let zoom mode decide what to show */
+    updatePhoneZoomMode();
+  }
+}
+
+function locVisible(v) {
+  /* Handled inside updatePhoneZoomMode for pin mode; hide when overall invisible */
+  if (!v) {
+    if (phoneUserMarker && phoneMap.hasLayer(phoneUserMarker)) phoneMap.removeLayer(phoneUserMarker);
+  }
+  /* When v=true, updatePhoneZoomMode() adds it in pin mode */
+}
+
+function clearPin() {
+  if (activePhonePinIdx >= 0) {
+    var old = PROJECTS[activePhonePinIdx];
+    phoneMarkers[activePhonePinIdx].setStyle({
+      radius: pinRadius(old),
+      weight: 2.5,
+      color: '#ffffff'
+    });
+  }
+  activePhonePinIdx = -1;
+}
+
+function pickPin(idx) {
+  clearPin();
+  activePhonePinIdx = idx;
+  var p = PROJECTS[idx];
+  phoneMarkers[idx].setStyle({ radius: pinRadius(p) + 4, weight: 3.5, color: '#01304A' });
+  phoneMap.panTo([p.lat, p.lng], { animate: true, duration: 0.6 });
+  populateCard(p);
+  show('projectCard');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   POPULATE PROJECT CARD (phone)
+   ═══════════════════════════════════════════════════════════════ */
+function populateCard(p) {
+  document.getElementById('cardName').textContent = p.name;
+
+  var bdg = document.getElementById('cardBadge');
+  setBadge(bdg, p);
+
+  document.getElementById('cardMeta').textContent =
+    p.gc + '  \u00B7  ' + p.val + '  \u00B7  ' + p.dist + ' away';
+
+  document.getElementById('cardAddr').textContent =
+    (p.days ? 'Bid deadline: ' + p.bid + '  \u00B7  ' : '') + p.addr;
+
+  var matchPct = p.match;
+  var matchFill = document.getElementById('matchFill');
+  matchFill.style.width = matchPct + '%';
+  var matchColor = matchPct >= 70 ? '#16A34A' : matchPct >= 50 ? '#D97706' : '#B3B0AD';
+  matchFill.style.background = matchColor;
+  document.getElementById('matchScoreVal').textContent = matchPct + '%';
+  document.getElementById('matchScoreVal').style.color = matchColor;
+  document.getElementById('matchTrack').setAttribute('aria-valuenow', matchPct);
+
+  var tagsEl = document.getElementById('cardTags');
+  tagsEl.textContent = '';
+  (p.phase === 'completed' ? ['N/A'] : p.name.split(' ').slice(0, 1)).concat([]);
+
+  /* Re-derive trades from project index */
+  var tradeSets = [
+    ['Electrical','HVAC','Plumbing'],
+    ['HVAC','Fire Protection'],
+    ['Electrical','Low Voltage','Data/Comm'],
+    ['HVAC'],
+    ['Electrical'],
+    ['HVAC','Plumbing'],
+    [],
+    ['Electrical','HVAC','Plumbing','Concrete'],
+    ['Electrical','HVAC','Plumbing','Structural Steel'],
+    ['Electrical','Fire Protection'],
+    ['Plumbing','HVAC'],
+    ['Electrical','HVAC','Data/Comm'],
+    ['Electrical','Fire Protection','HVAC'],
+    ['Electrical','HVAC','Low Voltage','Data/Comm'],
+    ['Electrical','HVAC','Plumbing','Fire Protection','Low Voltage']
+  ];
+  var idx = PROJECTS.indexOf(p);
+  var trades = tradeSets[idx] || [];
+
+  trades.forEach(function(t) {
+    if (!t) return;
+    var pill = document.createElement('span');
+    pill.className = 'bp-pill' + (p.match >= 70 ? ' bp-pill--matched' : '');
+    pill.textContent = t;
+    tagsEl.appendChild(pill);
+  });
+
+  /* Wire navigate button */
+  document.getElementById('btnNavigate').onclick = function() { openMaps(p); };
+}
+
+var _navConfirmProject = null;
+
+function openMaps(p) {
+  /* Show leave-app confirmation before opening external Maps URL */
+  _navConfirmProject = p;
+  document.getElementById('navConfirmAddr').textContent = p.addr;
+  document.getElementById('navConfirmOverlay').classList.add('open');
+  document.getElementById('navConfirmCancel').focus();
+}
+
+function _doOpenMaps(p) {
+  var mapsUrl = 'https://maps.google.com/?q=' + p.lat + ',' + p.lng + '&label=' + encodeURIComponent(p.name);
+  window.open(mapsUrl, '_blank');
+}
+
+document.getElementById('navConfirmCancel').addEventListener('click', function() {
+  document.getElementById('navConfirmOverlay').classList.remove('open');
+  _navConfirmProject = null;
+});
+document.getElementById('navConfirmOpen').addEventListener('click', function() {
+  document.getElementById('navConfirmOverlay').classList.remove('open');
+  if (_navConfirmProject) _doOpenMaps(_navConfirmProject);
+  _navConfirmProject = null;
+});
+document.getElementById('navConfirmOverlay').addEventListener('click', function(e) {
+  if (e.target === this) {
+    this.classList.remove('open');
+    _navConfirmProject = null;
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   BADGE HELPER
+   ═══════════════════════════════════════════════════════════════ */
+function setBadge(el, p) {
+  if (p.priority === 'urgent') {
+    el.textContent = 'Bid in ' + p.days + (p.days === 1 ? ' day' : ' days');
+    el.className = 'bp-badge bp-badge--urgent';
+  } else if (p.phase === 'active') {
+    el.textContent = 'Active';
+    el.className = 'bp-badge bp-badge--active';
+  } else if (p.phase === 'planning') {
+    el.textContent = 'Planning';
+    el.className = 'bp-badge bp-badge--planning';
+  } else if (p.phase === 'completed') {
+    el.textContent = 'Completed';
+    el.className = 'bp-badge bp-badge--inactive';
+  } else {
+    el.textContent = p.match + '% Match';
+    el.className = 'bp-badge bp-badge--matched';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE STEP NAVIGATION
+   ═══════════════════════════════════════════════════════════════ */
+var STEPS = [
+  {
+    label: 'Step 1: First visit \u2014 soft opt-in location permission prompt',
+    fn: function() {
+      show('permOverlay');
+      hide('projectCard'); hide('navToast');
+      pinsVisible(false); locVisible(false);
+    }
+  },
+  {
+    label: 'Step 2: Permission granted \u2014 real map loads with 15 color-coded project pins across the US. Pan and zoom the map!',
+    fn: function() {
+      hide('permOverlay'); hide('projectCard'); hide('navToast');
+      pinsVisible(true); locVisible(true); clearPin();
+      setTimeout(function() { reframeBounds(phoneMap, true); }, 100);
+    }
+  },
+  {
+    label: 'Step 3: Mark taps a red pin \u2014 project card slides up with full CCPI data and match score',
+    fn: function() {
+      hide('permOverlay'); hide('navToast');
+      pinsVisible(true); locVisible(true);
+      var urgentIdx = PROJECTS.findIndex(function(p) { return p.priority === 'urgent'; });
+      pickPin(urgentIdx >= 0 ? urgentIdx : 0);
+    }
+  },
+  {
+    label: 'Step 4: Mark taps Navigate \u2014 prototype opens Google Maps with the project address for turn-by-turn directions',
+    fn: function() {
+      hide('permOverlay');
+      pinsVisible(true); locVisible(true);
+      var urgentIdx = PROJECTS.findIndex(function(p) { return p.priority === 'urgent'; });
+      var idx = urgentIdx >= 0 ? urgentIdx : 0;
+      pickPin(idx);
+      setTimeout(function() { openMaps(PROJECTS[idx]); }, 800);
+    }
+  }
+];
+
+var dots = [];
+
+function buildStepDots() {
+  var nav = document.getElementById('stepNav');
+  STEPS.forEach(function(s, i) {
+    var d = document.createElement('div');
+    d.className = 'step-dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('role', 'tab');
+    d.setAttribute('tabindex', '0');
+    d.setAttribute('aria-label', 'Step ' + (i + 1));
+    d.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    d.addEventListener('click', function() { goTo(i); });
+    d.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTo(i); }
+    });
+    nav.appendChild(d);
+    dots.push(d);
+  });
+}
+
+function goTo(i) {
+  STEPS[i].fn();
+  document.getElementById('stepLabel').textContent = STEPS[i].label;
+  dots.forEach(function(d, j) {
+    d.className = 'step-dot' + (j === i ? ' active' : '');
+    d.setAttribute('aria-selected', j === i ? 'true' : 'false');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE MISC HANDLERS
+   ═══════════════════════════════════════════════════════════════ */
+function show(id) { document.getElementById(id).classList.add('visible'); }
+function hide(id) { document.getElementById(id).classList.remove('visible'); }
+
+document.getElementById('btnEnable').addEventListener('click', function() { goTo(1); });
+document.getElementById('btnDeny').addEventListener('click', function() { hide('permOverlay'); });
+document.getElementById('btnCardClose').addEventListener('click', function() {
+  hide('projectCard'); clearPin();
+});
+
+document.querySelectorAll('.bp-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.bp-tab').forEach(function(t) {
+      t.classList.remove('active'); t.removeAttribute('aria-current');
+    });
+    tab.classList.add('active');
+    tab.setAttribute('aria-current', 'page');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLET MAP
+   ═══════════════════════════════════════════════════════════════ */
+var tabletMap = null;
+var tabletMarkers = [];
+var tabletUserMarker = null;
+var activeTabletIdx = -1;
+
+var tabletClusterMarkers = [];
+
+function initTabletMap() {
+  tabletMap = L.map('tabletMapEl', {
+    zoomControl: false,
+    attributionControl: false,
+    scrollWheelZoom: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd'
+  }).addTo(tabletMap);
+
+  /* User location */
+  var userIcon = L.divIcon({
+    className: '',
+    html: '<div class="user-loc-outer"><div class="user-loc-inner"></div></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+  tabletUserMarker = L.marker([USER_LAT, USER_LNG], { icon: userIcon, zIndexOffset: 50 });
+
+  /* Cluster markers */
+  CLUSTERS_DATA.forEach(function(c, ci) {
+    var count = c.indices.length;
+    var sizeClass = count >= 3 ? 'cluster-marker--lg' : count === 2 ? 'cluster-marker--md' : 'cluster-marker--sm';
+    var icon = L.divIcon({
+      className: '',
+      html: '<div class="cluster-marker ' + sizeClass + '">' + count + '</div>',
+      iconSize: count >= 3 ? [52, 52] : count === 2 ? [42, 42] : [34, 34],
+      iconAnchor: count >= 3 ? [26, 26] : count === 2 ? [21, 21] : [17, 17]
+    });
+    var cm = L.marker([c.lat, c.lng], { icon: icon, zIndexOffset: 500 });
+    cm.on('click', function() {
+      var pts = c.indices.map(function(i) { return [PROJECTS[i].lat, PROJECTS[i].lng]; });
+      tabletMap.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 8 });
+    });
+    tabletClusterMarkers.push(cm);
+  });
+
+  /* Project markers (created but not added yet — zoom mode manages) */
+  PROJECTS.forEach(function(p, i) {
+    var color = PIN_COLORS[p.priority];
+    var r = pinRadius(p);
+    var m = L.circleMarker([p.lat, p.lng], {
+      radius: r,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2.5,
+      fillOpacity: 1
+    });
+    m.on('click', function() { selectTabletProject(i); });
+    tabletMarkers.push(m);
+  });
+
+  /* Zoom-based layer swap */
+  tabletMap.on('zoomend', updateTabletZoomMode);
+
+  reframeBounds(tabletMap, true);
+  updateTabletZoomMode();
+
+  /* Zoom control buttons */
+  document.getElementById('tabletZoomIn').addEventListener('click', function() {
+    tabletMap.zoomIn();
+  });
+  document.getElementById('tabletZoomOut').addEventListener('click', function() {
+    tabletMap.zoomOut();
+  });
+}
+
+function updateTabletZoomMode() {
+  var z = tabletMap.getZoom();
+  if (z < CLUSTER_ZOOM_IN) {
+    tabletMarkers.forEach(function(m) { if (tabletMap.hasLayer(m)) tabletMap.removeLayer(m); });
+    if (tabletUserMarker && tabletMap.hasLayer(tabletUserMarker)) tabletMap.removeLayer(tabletUserMarker);
+    tabletClusterMarkers.forEach(function(cm) { if (!tabletMap.hasLayer(cm)) cm.addTo(tabletMap); });
+  } else {
+    tabletClusterMarkers.forEach(function(cm) { if (tabletMap.hasLayer(cm)) tabletMap.removeLayer(cm); });
+    tabletMarkers.forEach(function(m) { if (!tabletMap.hasLayer(m)) m.addTo(tabletMap); });
+    if (tabletUserMarker && !tabletMap.hasLayer(tabletUserMarker)) tabletUserMarker.addTo(tabletMap);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLET PROJECT LIST
+   ═══════════════════════════════════════════════════════════════ */
+var tabletFilter = 'all';
+var tabletSearch = '';
+
+function sortedProjects() {
+  var priorityOrder = { urgent: 0, matched: 1, active: 2, planning: 3, inactive: 4 };
+  return PROJECTS.slice().sort(function(a, b) {
+    var po = priorityOrder[a.priority] - priorityOrder[b.priority];
+    if (po !== 0) return po;
+    if (a.priority === 'urgent') return a.days - b.days;
+    return b.match - a.match;
+  });
+}
+
+function buildTabletList() {
+  var list = document.getElementById('tabletProjectList');
+  list.textContent = '';
+
+  var searchLower = tabletSearch.toLowerCase();
+  var sorted = sortedProjects();
+  var shown = 0;
+
+  sorted.forEach(function(p) {
+    var origIdx = PROJECTS.indexOf(p);
+    /* Filter */
+    if (tabletFilter !== 'all' && p.priority !== tabletFilter) return;
+    /* Search */
+    if (searchLower && p.name.toLowerCase().indexOf(searchLower) === -1
+        && p.addr.toLowerCase().indexOf(searchLower) === -1
+        && p.gc.toLowerCase().indexOf(searchLower) === -1) return;
+
+    shown++;
+    var item = document.createElement('div');
+    item.className = 'tablet-project-item' + (activeTabletIdx === origIdx ? ' selected' : '');
+    item.setAttribute('role', 'listitem');
+
+    var top = document.createElement('div');
+    top.className = 'item-top';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'item-name';
+    nameEl.textContent = p.name;
+    top.appendChild(nameEl);
+
+    var badge = document.createElement('span');
+    badge.className = 'bp-badge';
+    setBadge(badge, p);
+    top.appendChild(badge);
+    item.appendChild(top);
+
+    var meta = document.createElement('div');
+    meta.className = 'item-meta';
+
+    var gcSpan = document.createElement('span');
+    gcSpan.textContent = p.gc;
+    meta.appendChild(gcSpan);
+
+    var dot1 = document.createElement('span');
+    dot1.className = 'item-dot';
+    dot1.textContent = '\u00B7';
+    meta.appendChild(dot1);
+
+    var valSpan = document.createElement('span');
+    valSpan.textContent = p.val;
+    meta.appendChild(valSpan);
+
+    var dot2 = document.createElement('span');
+    dot2.className = 'item-dot';
+    dot2.textContent = '\u00B7';
+    meta.appendChild(dot2);
+
+    var distSpan = document.createElement('span');
+    distSpan.textContent = p.dist;
+    meta.appendChild(distSpan);
+
+    item.appendChild(meta);
+    item.addEventListener('click', function() { selectTabletProject(origIdx); });
+    list.appendChild(item);
+  });
+
+  document.getElementById('tabletListHeader').textContent =
+    shown + (shown === 1 ? ' project' : ' projects') + ' found';
+}
+
+function selectTabletProject(idx) {
+  activeTabletIdx = idx;
+  var p = PROJECTS[idx];
+
+  /* Highlight selected marker */
+  tabletMarkers.forEach(function(m, i) {
+    var pi = PROJECTS[i];
+    m.setStyle({
+      radius: pinRadius(pi) + (i === idx ? 5 : 0),
+      weight: i === idx ? 4 : 2.5,
+      color: i === idx ? '#01304A' : '#ffffff'
+    });
+  });
+
+  /* Pan to selected */
+  tabletMap.panTo([p.lat, p.lng], { animate: true, duration: 0.6 });
+
+  /* Populate detail panel */
+  populateTabletDetail(p, idx);
+  document.getElementById('tabletDetail').classList.add('visible');
+
+  /* Rebuild list to show selection */
+  buildTabletList();
+}
+
+function populateTabletDetail(p, idx) {
+  document.getElementById('detailName').textContent = p.name;
+
+  var bdg = document.getElementById('detailBadge');
+  setBadge(bdg, p);
+
+  document.getElementById('detailMeta').textContent =
+    p.gc + '  \u00B7  ' + p.val + '  \u00B7  ' + p.dist + ' away';
+  document.getElementById('detailAddr').textContent = p.addr;
+
+  var matchPct = p.match;
+  var detailFill = document.getElementById('detailMatchFill');
+  detailFill.style.width = matchPct + '%';
+  var matchColor = matchPct >= 70 ? '#16A34A' : matchPct >= 50 ? '#D97706' : '#B3B0AD';
+  detailFill.style.background = matchColor;
+  document.getElementById('detailMatchVal').textContent = matchPct + '%';
+  document.getElementById('detailMatchVal').style.color = matchColor;
+
+  var tradeSets = [
+    ['Electrical','HVAC','Plumbing'],
+    ['HVAC','Fire Protection'],
+    ['Electrical','Low Voltage','Data/Comm'],
+    ['HVAC'],
+    ['Electrical'],
+    ['HVAC','Plumbing'],
+    [],
+    ['Electrical','HVAC','Plumbing','Concrete'],
+    ['Electrical','HVAC','Plumbing','Structural Steel'],
+    ['Electrical','Fire Protection'],
+    ['Plumbing','HVAC'],
+    ['Electrical','HVAC','Data/Comm'],
+    ['Electrical','Fire Protection','HVAC'],
+    ['Electrical','HVAC','Low Voltage','Data/Comm'],
+    ['Electrical','HVAC','Plumbing','Fire Protection','Low Voltage']
+  ];
+  var trades = tradeSets[idx] || [];
+  var tagsEl = document.getElementById('detailTags');
+  tagsEl.textContent = '';
+  trades.forEach(function(t) {
+    if (!t) return;
+    var pill = document.createElement('span');
+    pill.className = 'bp-pill' + (p.match >= 70 ? ' bp-pill--matched' : '');
+    pill.textContent = t;
+    tagsEl.appendChild(pill);
+  });
+
+  document.getElementById('detailNavBtn').onclick = function() { openMaps(p); };
+}
+
+/* Close detail panel */
+document.getElementById('detailBackBtn').addEventListener('click', function() {
+  document.getElementById('tabletDetail').classList.remove('visible');
+  activeTabletIdx = -1;
+  tabletMarkers.forEach(function(m, i) {
+    var pi = PROJECTS[i];
+    m.setStyle({ radius: pinRadius(pi), weight: 2.5, color: '#ffffff' });
+  });
+  buildTabletList();
+});
+
+/* Tablet search */
+document.getElementById('tabletSearchInput').addEventListener('input', function() {
+  tabletSearch = this.value;
+  buildTabletList();
+});
+
+/* Tablet filter chips */
+document.querySelectorAll('.filter-chip').forEach(function(chip) {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.filter-chip').forEach(function(c) {
+      c.classList.remove('filter-chip--active');
+    });
+    chip.classList.add('filter-chip--active');
+    tabletFilter = chip.dataset.filter;
+    buildTabletList();
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   PROTOTYPE ACTION TOAST — lightweight feedback for nav/share
+   ═══════════════════════════════════════════════════════════════ */
+var _actionToastTimer = null;
+function showActionToast(msg) {
+  var t = document.getElementById('actionToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'actionToast';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.style.cssText = [
+      'position:absolute', 'top:70px', 'left:50%', 'transform:translateX(-50%)',
+      'background:var(--primary-700)', 'color:var(--neutral-0)',
+      'font-family:var(--font-family-blueprintfont)', 'font-size:13px', 'font-weight:500',
+      'padding:10px 18px', 'border-radius:8px', 'white-space:nowrap', 'z-index:60',
+      'box-shadow:0 4px 14px rgba(0,0,0,0.30)', 'opacity:0',
+      'transition:opacity 0.2s ease', 'pointer-events:none'
+    ].join(';');
+    document.querySelector('.phone-shell').appendChild(t);
+  }
+  if (_actionToastTimer) clearTimeout(_actionToastTimer);
+  t.innerHTML = msg;
+  t.style.opacity = '1';
+  _actionToastTimer = setTimeout(function() { t.style.opacity = '0'; }, 2800);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAV DRAWER — hamburger menu wiring
+   ═══════════════════════════════════════════════════════════════ */
+function openNavDrawer() {
+  document.getElementById('navDrawerOverlay').classList.add('open');
+  document.getElementById('navDrawerClose').focus();
+}
+function closeNavDrawer() {
+  document.getElementById('navDrawerOverlay').classList.remove('open');
+}
+
+document.querySelector('.app-nav .bp-header-btn[aria-label="Open navigation menu"]')
+  .addEventListener('click', openNavDrawer);
+document.getElementById('navDrawerClose').addEventListener('click', closeNavDrawer);
+document.getElementById('navDrawerBackdrop').addEventListener('click', closeNavDrawer);
+
+/* Esc closes nav drawer, share sheet, and maps confirmation */
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('navDrawerOverlay').classList.contains('open')) closeNavDrawer();
+  if (document.getElementById('shareSheet').classList.contains('visible')) hide('shareSheet');
+  if (document.getElementById('navConfirmOverlay').classList.contains('open')) {
+    document.getElementById('navConfirmOverlay').classList.remove('open');
+    _navConfirmProject = null;
+  }
+});
+
+var NAV_LABELS = {
+  nearby: 'Projects Near Me', search: 'Project Search',
+  bidcenter: 'Bid Center', watchlist: 'My Watchlist',
+  bids: 'My Bid Activity', companies: 'Company Directory', profile: 'Trade Profile'
+};
+
+document.querySelectorAll('.nav-drawer__item').forEach(function(item) {
+  item.addEventListener('click', function() {
+    closeNavDrawer();
+    var dest = item.dataset.nav;
+    if (dest === 'nearby') return; /* already on this screen */
+    var label = NAV_LABELS[dest] || dest;
+    showActionToast('&#8594;&nbsp;Opening <strong>' + label + '</strong>&nbsp;&hellip;');
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARE SHEET — wire up all actions
+   ═══════════════════════════════════════════════════════════════ */
+function openShareSheet() {
+  var p = (activePhonePinIdx >= 0) ? PROJECTS[activePhonePinIdx] : null;
+  if (p) {
+    var nameEl = document.getElementById('shareSheetProjectName');
+    var linkEl = document.getElementById('shareLink');
+    if (nameEl) nameEl.textContent = p.name;
+    if (linkEl) linkEl.textContent = 'app.constructconnect.com/project/' + (5100 + activePhonePinIdx) + '/p';
+  }
+  show('shareSheet');
+}
+
+/* Share button inside project card */
+var cardShareBtn = document.querySelector('#projectCard .bp-button[aria-label="Share project"]');
+if (cardShareBtn) cardShareBtn.addEventListener('click', openShareSheet);
+
+/* Cancel / close */
+document.getElementById('shareSheetClose').addEventListener('click', function() { hide('shareSheet'); });
+
+/* Copy link */
+document.getElementById('shareCopyBtn').addEventListener('click', function() {
+  var linkText = document.getElementById('shareLink').textContent;
+  var btn = this;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText('https://' + linkText).catch(function() {});
+  }
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2500);
+});
+
+/* Email */
+document.getElementById('shareEmail').addEventListener('click', function() {
+  var p = (activePhonePinIdx >= 0) ? PROJECTS[activePhonePinIdx] : { name: 'Project' };
+  var id = 5100 + activePhonePinIdx;
+  var sub = encodeURIComponent('Project on ConstructConnect: ' + p.name);
+  var bod = encodeURIComponent('I found a project on ConstructConnect that might interest you:\n\n' + p.name + '\n\nhttps://app.constructconnect.com/project/' + id + '/p?sourceType=3');
+  window.location.href = 'mailto:?subject=' + sub + '&body=' + bod;
+  setTimeout(function() { hide('shareSheet'); }, 400);
+});
+
+/* SMS / Message */
+document.getElementById('shareText').addEventListener('click', function() {
+  var id = 5100 + activePhonePinIdx;
+  window.location.href = 'sms:?body=' + encodeURIComponent('https://app.constructconnect.com/project/' + id + '/p?sourceType=3');
+  setTimeout(function() { hide('shareSheet'); }, 400);
+});
+
+/* Send to Bid Center */
+document.getElementById('shareBidCenter').addEventListener('click', function() {
+  hide('shareSheet');
+  var p = (activePhonePinIdx >= 0) ? PROJECTS[activePhonePinIdx] : { name: 'Project' };
+  showActionToast('&#10003;&nbsp;<strong>' + p.name + '</strong> sent to your Bid Center');
+});
+
+/* More (OS share sheet simulation) */
+document.getElementById('shareMore').addEventListener('click', function() {
+  hide('shareSheet');
+  showActionToast('Prototype: system share sheet would appear here');
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   VIEW TOGGLE
+   ═══════════════════════════════════════════════════════════════ */
+function switchView(view) {
+  var phoneView  = document.getElementById('phoneView');
+  var tabletView = document.getElementById('tabletView');
+  var btnPhone   = document.getElementById('btnPhoneView');
+  var btnTablet  = document.getElementById('btnTabletView');
+
+  if (view === 'phone') {
+    phoneView.hidden  = false;
+    tabletView.hidden = true;
+    btnPhone.classList.add('vtb__btn--active');
+    btnPhone.setAttribute('aria-pressed', 'true');
+    btnTablet.classList.remove('vtb__btn--active');
+    btnTablet.setAttribute('aria-pressed', 'false');
+    if (phoneMap) setTimeout(function() { phoneMap.invalidateSize(); }, 50);
+  } else {
+    phoneView.hidden  = true;
+    tabletView.hidden = false;
+    btnPhone.classList.remove('vtb__btn--active');
+    btnPhone.setAttribute('aria-pressed', 'false');
+    btnTablet.classList.add('vtb__btn--active');
+    btnTablet.setAttribute('aria-pressed', 'true');
+    if (!tabletMap) {
+      /* Lazy-init tablet map on first show */
+      setTimeout(function() { initTabletMap(); buildTabletList(); }, 50);
+    } else {
+      setTimeout(function() { tabletMap.invalidateSize(); }, 50);
+    }
+  }
+}
+
+document.getElementById('btnPhoneView').addEventListener('click', function() { switchView('phone'); });
+document.getElementById('btnTabletView').addEventListener('click', function() { switchView('tablet'); });
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+  initPhoneMap();
+  buildStepDots();
+  goTo(0);
+});
+
+</script>
+</body>
+</html>

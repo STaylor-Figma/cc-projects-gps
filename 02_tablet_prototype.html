@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCPI Geolocation — Tablet Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--bg2:#f6f5f2;--bg3:#eeedea;--tx:#1a1a1a;--tx2:#6b6b6b;--tx3:#9e9e9e;--bd:rgba(0,0,0,.1);--bd2:rgba(0,0,0,.06);--blue:#2563EB;--blueL:#EFF6FF;--red:#DC2626;--redL:#FEF2F2;--amb:#D97706;--ambL:#FFFBEB;--grn:#16A34A;--grnL:#F0FDF4;--gry:#9CA3AF;--r:12px;--f:'DM Sans',sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--bg2:#242424;--bg3:#2e2e2e;--tx:#f0f0f0;--tx2:#a0a0a0;--tx3:#6b6b6b;--bd:rgba(255,255,255,.1);--bd2:rgba(255,255,255,.05);--blueL:#1e293b;--redL:#2d1b1b;--ambL:#2d2514;--grnL:#1a2e1a}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--f);background:var(--bg2);color:var(--tx);display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 16px}
+h1{font-size:20px;font-weight:600;margin-bottom:4px;text-align:center}
+.sub{font-size:13px;color:var(--tx2);text-align:center;margin-bottom:20px}
+.steps{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--bd);cursor:pointer;transition:.2s}
+.dot.on{background:var(--blue);border-color:var(--blue);transform:scale(1.2)}
+.slbl{text-align:center;font-size:13px;color:var(--tx2);margin-bottom:20px;min-height:36px;line-height:1.4;max-width:600px}
+.tb{width:820px;max-width:100%;height:580px;background:var(--bg);border:1px solid var(--bd);border-radius:24px;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+.sbar{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11px;font-weight:500;color:var(--tx2);background:var(--bg2);z-index:5;position:relative}
+.nbar{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--bd2);background:var(--bg);z-index:5;position:relative}
+.nbar span{font-size:16px;font-weight:600}
+.nbar svg{width:18px;height:18px;color:var(--tx2)}
+.nbr{display:flex;gap:12px;align-items:center}
+.body{display:flex;height:calc(100% - 80px)}
+.map{position:relative;flex:1;background:var(--bg2);overflow:hidden}
+.map svg.grid{position:absolute;inset:0;opacity:.5}
+.map svg.grid line{stroke:var(--bd2);stroke-width:1}
+.rd{position:absolute;background:var(--bg);opacity:.5}
+.rdh{height:2px;width:100%}.rdv{width:2px;height:100%}
+.udot{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--blue);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--blue);z-index:5;left:240px;top:230px;transition:opacity .4s}
+.upulse{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(37,99,235,.08);left:222px;top:212px;z-index:4;transition:opacity .4s;animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:.2}}
+.rring{position:absolute;width:320px;height:320px;border-radius:50%;border:2px dashed rgba(37,99,235,.15);left:87px;top:77px;z-index:1;transition:opacity .4s}
+.pin{position:absolute;border-radius:50%;cursor:pointer;border:2px solid var(--bg);transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.pin:hover,.pin.on{transform:scale(1.6);z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.p-red{background:var(--red)}.p-amb{background:var(--amb)}.p-grn{background:var(--grn)}.p-blue{background:var(--blue)}.p-gry{background:var(--gry)}
+.p-lg{width:18px;height:18px}.p-md{width:14px;height:14px}.p-sm{width:10px;height:10px}
+.lgnd{position:absolute;bottom:12px;left:12px;background:var(--bg);border-radius:8px;padding:6px 10px;display:flex;gap:10px;font-size:10px;color:var(--tx2);border:1px solid var(--bd2);z-index:6;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.ldot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+.rbdg{position:absolute;top:12px;right:12px;background:var(--bg);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:500;color:var(--tx2);border:1px solid var(--bd2);z-index:6;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.panel{width:280px;border-left:1px solid var(--bd2);overflow-y:auto;background:var(--bg)}
+.phdr{padding:12px 14px;border-bottom:1px solid var(--bd2);font-size:12px;font-weight:600;color:var(--tx2)}
+.pitem{padding:10px 14px;border-bottom:1px solid var(--bd2);cursor:pointer;transition:background .15s}
+.pitem:hover,.pitem.on{background:var(--bg2)}
+.pname{font-size:13px;font-weight:500;margin-bottom:2px}
+.pmeta{font-size:11px;color:var(--tx2);line-height:1.4}
+.pbdg{display:inline-block;font-size:10px;padding:2px 8px;border-radius:8px;margin-top:3px;font-weight:500}
+.pb-urg{background:var(--redL);color:var(--red)}.pb-mat{background:var(--ambL);color:var(--amb)}.pb-act{background:var(--grnL);color:var(--grn)}.pb-pln{background:var(--blueL);color:var(--blue)}
+.detail{display:none;padding:14px}
+.detail.show{display:block}
+.dsv{width:100%;height:64px;border-radius:8px;background:var(--bg2);margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tx3);border:1px solid var(--bd2)}
+.dtit{font-size:15px;font-weight:600;margin-bottom:4px}
+.dbdg{display:inline-block;font-size:10px;padding:2px 8px;border-radius:8px;font-weight:500;margin-bottom:6px}
+.dmta{font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:4px}
+.dmta2{font-size:11px;color:var(--tx3);line-height:1.4;margin-bottom:8px}
+.dtgs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.dtg{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--bg2);color:var(--tx2);border:1px solid var(--bd2)}
+.dtg-m{background:var(--grnL);color:var(--grn);border-color:rgba(22,163,74,.2)}
+.dacts{display:flex;gap:6px}
+.dacts button{flex:1;padding:8px 0;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:var(--f)}
+.bn{background:var(--blue);color:#fff}.bs{background:var(--bg2);color:var(--tx);border:1px solid var(--bd)!important}
+.dback{font-size:11px;color:var(--blue);cursor:pointer;margin-bottom:10px;display:inline-block}
+.dback:hover{text-decoration:underline}
+.pov{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px)}
+.pov.show{opacity:1;pointer-events:auto}
+.pbx{background:var(--bg);border-radius:20px;padding:28px 24px 20px;width:340px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.15)}
+.picon{width:48px;height:48px;background:var(--blueL);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.picon svg{width:24px;height:24px;color:var(--blue)}
+.pbx h3{font-size:17px;font-weight:600;margin-bottom:6px}
+.pbx p{font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.5}
+.ppbtn{width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:8px;font-family:var(--f)}
+.ppbtn-p{background:var(--blue);color:#fff}.ppbtn-s{background:transparent;color:var(--tx2)}
+.ft{margin-top:24px;text-align:center;font-size:11px;color:var(--tx3);line-height:1.5}
+</style>
+</head>
+<body>
+<h1>CCPI Geolocation — Tablet View</h1>
+<p class="sub">Split-panel layout: map + project list/detail side by side · V1 + V2 + V3</p>
+<div class="steps" id="steps"></div>
+<p class="slbl" id="slbl"></p>
+<div class="tb" id="tb">
+<div class="sbar"><span>9:41 AM</span><span>Wi-Fi · iPad</span></div>
+<div class="nbar">
+<svg viewBox="0 0 20 20" fill="none" style="width:18px;height:18px"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+<span>Projects Near Me</span>
+<div class="nbr">
+<svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+<svg viewBox="0 0 20 20" fill="none"><path d="M5 2v16l5-3.5L15 18V2z" stroke="currentColor" stroke-width="1.3"/></svg>
+<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.3"/></svg>
+</div>
+</div>
+<div class="body">
+<div class="map" id="map">
+<svg class="grid" width="540" height="500"><line x1="0" y1="83" x2="540" y2="83"/><line x1="0" y1="167" x2="540" y2="167"/><line x1="0" y1="250" x2="540" y2="250"/><line x1="0" y1="333" x2="540" y2="333"/><line x1="0" y1="417" x2="540" y2="417"/><line x1="90" y1="0" x2="90" y2="500"/><line x1="180" y1="0" x2="180" y2="500"/><line x1="270" y1="0" x2="270" y2="500"/><line x1="360" y1="0" x2="360" y2="500"/><line x1="450" y1="0" x2="450" y2="500"/></svg>
+<div class="rd rdh" style="top:245px"></div><div class="rd rdh" style="top:140px"></div><div class="rd rdh" style="top:360px"></div>
+<div class="rd rdv" style="left:250px"></div><div class="rd rdv" style="left:130px"></div><div class="rd rdv" style="left:380px"></div>
+<div class="rring"></div><div class="upulse"></div><div class="udot"></div>
+<div class="pin p-red p-lg" style="left:330px;top:100px" data-name="Mercy Hospital Expansion" data-gc="Turner Construction" data-val="$12.4M" data-stage="Bidding" data-bid="Apr 4, 2026" data-days="3" data-dist="2.4 mi" data-match="87" data-trades="Electrical,HVAC,Plumbing" data-addr="4500 Memorial Dr, Houston TX" data-docs="12 Documents"></div>
+<div class="pin p-red p-md" style="left:140px;top:170px" data-name="Westfield Mall Renovation" data-gc="Hensel Phelps" data-val="$8.2M" data-stage="Bidding" data-bid="Apr 6, 2026" data-days="5" data-dist="4.1 mi" data-match="72" data-trades="HVAC,Fire Protection" data-addr="1200 Westheimer Rd, Houston TX" data-docs="8 Documents"></div>
+<div class="pin p-amb p-lg" style="left:370px;top:260px" data-name="Cityview Office Tower" data-gc="Skanska USA" data-val="$24M" data-stage="Active" data-bid="" data-days="" data-dist="3.8 mi" data-match="91" data-trades="Electrical,Low Voltage,Data/Comm" data-addr="800 Travis St, Houston TX" data-docs="23 Documents"></div>
+<div class="pin p-grn p-md" style="left:150px;top:310px" data-name="Parkside Elementary School" data-gc="McCarthy Building" data-val="$6.5M" data-stage="Active" data-bid="" data-days="" data-dist="5.2 mi" data-match="65" data-trades="HVAC" data-addr="3100 Kirby Dr, Houston TX" data-docs="6 Documents"></div>
+<div class="pin p-blue p-sm" style="left:80px;top:70px" data-name="Harbor Point Condominiums" data-gc="Balfour Beatty" data-val="$18M" data-stage="Planning" data-bid="" data-days="" data-dist="7.8 mi" data-match="45" data-trades="Electrical" data-addr="900 Navigation Blvd, Houston TX" data-docs="3 Documents"></div>
+<div class="pin p-blue p-md" style="left:400px;top:390px" data-name="Central Library Annex" data-gc="Brasfield & Gorrie" data-val="$4.2M" data-stage="Planning" data-bid="" data-days="" data-dist="6.1 mi" data-match="58" data-trades="HVAC,Plumbing" data-addr="500 McKinney St, Houston TX" data-docs="5 Documents"></div>
+<div class="pin p-gry p-sm" style="left:270px;top:410px" data-name="Riverside Apts Phase 1" data-gc="Completed" data-val="$3.1M" data-stage="Completed" data-bid="" data-days="" data-dist="4.9 mi" data-match="20" data-trades="N/A" data-addr="2200 Allen Pkwy, Houston TX" data-docs="0 Documents"></div>
+<div class="lgnd"><span><span class="ldot" style="background:var(--red)"></span>Bid &lt;7d</span><span><span class="ldot" style="background:var(--amb)"></span>Match</span><span><span class="ldot" style="background:var(--grn)"></span>Active</span><span><span class="ldot" style="background:var(--blue)"></span>Planning</span></div>
+<div class="rbdg">25 mi radius</div>
+</div>
+<div class="panel" id="panel">
+<div class="phdr" id="phdr">7 projects nearby</div>
+<div id="list"></div>
+<div class="detail" id="detail">
+<div class="dback" onclick="backToList()">&larr; Back to list</div>
+<div class="dsv" id="dsv"></div>
+<div class="dtit" id="dtit"></div>
+<div class="dbdg" id="dbdg"></div>
+<div class="dmta" id="dmta"></div>
+<div class="dmta2" id="dmta2"></div>
+<div class="dtgs" id="dtgs"></div>
+<div class="dacts"><button class="bn">Navigate</button><button class="bs">Save</button><button class="bs">Share</button></div>
+</div>
+</div>
+</div>
+<div class="pov" id="pov">
+<div class="pbx">
+<div class="picon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg></div>
+<h3>See projects near you</h3>
+<p>Enable location to discover construction projects on the map, get directions to job sites, and receive alerts for new opportunities nearby.</p>
+<button class="ppbtn ppbtn-p" onclick="grant()">Enable Location</button>
+<button class="ppbtn ppbtn-s" onclick="deny()">Not Now</button>
+</div>
+</div>
+</div>
+<div class="ft">CCPI Geolocation Prototype · Tablet View · V1/V2/V3<br>Prepared by Sharon Taylor · UX & Product Strategy · April 2026</div>
+<script>
+var pins=document.querySelectorAll('.pin');
+var listEl=document.getElementById('list');
+var data=[];
+pins.forEach(function(p,i){
+var d={i:i,name:p.dataset.name,gc:p.dataset.gc,val:p.dataset.val,stage:p.dataset.stage,bid:p.dataset.bid,days:p.dataset.days,dist:p.dataset.dist,match:p.dataset.match,trades:p.dataset.trades,addr:p.dataset.addr,docs:p.dataset.docs};
+data.push(d);
+var bdgClass=d.days?'pb-urg':d.stage==='Active'?'pb-act':d.stage==='Planning'?'pb-pln':'';
+var bdgText=d.days?'Bid in '+d.days+' days':d.stage;
+var item=document.createElement('div');
+item.className='pitem';
+item.dataset.idx=i;
+item.innerHTML='<div class="pname">'+d.name+'</div><div class="pmeta">'+d.gc+' · '+d.val+' · '+d.dist+'</div>'+(bdgClass?'<div class="pbdg '+bdgClass+'">'+bdgText+'</div>':'');
+item.onclick=function(){selectProject(i)};
+listEl.appendChild(item);
+});
+var steps=[
+{l:"Step 1: First visit — soft opt-in location prompt on tablet",fn:function(){show('pov');allPins(0);loc(0);backToList()}},
+{l:"Step 2: Permission granted — map + project list panel populate together",fn:function(){hide('pov');allPins(1);loc(1);clearActive();backToList()}},
+{l:"Step 3: Mark taps a pin or list item — detail panel replaces list with full CCPI project data",fn:function(){hide('pov');allPins(1);loc(1);selectProject(0)}},
+{l:"Step 4: Mark taps Navigate — hands off to Google Maps for Immersive Navigation",fn:function(){hide('pov');allPins(1);loc(1);selectProject(0)}}
+];
+var stEl=document.getElementById('steps');
+steps.forEach(function(s,i){var d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.onclick=function(){goTo(i)};stEl.appendChild(d)});
+function goTo(i){steps[i].fn();document.getElementById('slbl').textContent=steps[i].l;document.querySelectorAll('.dot').forEach(function(d,j){d.className='dot'+(j===i?' on':'')})}
+function show(id){document.getElementById(id).classList.add('show')}
+function hide(id){document.getElementById(id).classList.remove('show')}
+function allPins(v){pins.forEach(function(p){p.style.opacity=v})}
+function loc(v){document.querySelector('.udot').style.opacity=v;document.querySelector('.upulse').style.opacity=v;document.querySelector('.rring').style.opacity=v}
+function clearActive(){pins.forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.pitem').forEach(function(i){i.classList.remove('on')})}
+function grant(){goTo(1)}
+function deny(){hide('pov')}
+function backToList(){document.getElementById('list').style.display='';document.getElementById('detail').classList.remove('show');document.getElementById('phdr').textContent='7 projects nearby';clearActive()}
+function selectProject(idx){
+clearActive();
+var d=data[idx];
+pins[idx].classList.add('on');
+document.querySelectorAll('.pitem').forEach(function(it){if(parseInt(it.dataset.idx)===idx)it.classList.add('on')});
+document.getElementById('list').style.display='none';
+document.getElementById('phdr').textContent=d.name;
+document.getElementById('dsv').textContent='Street View · '+d.addr;
+document.getElementById('dtit').textContent=d.name;
+var hasBid=d.days!=='';
+document.getElementById('dbdg').textContent=hasBid?'Bid in '+d.days+' days':d.stage;
+document.getElementById('dbdg').className='dbdg '+(hasBid?'pb-urg':d.stage==='Active'?'pb-act':'pb-pln');
+var meta=d.gc+' · '+d.val+' · '+d.dist+' away';
+if(hasBid) meta+='<br>Bid Date: '+d.bid+' · Match Score: '+d.match+'%';
+else meta+='<br>Stage: '+d.stage+' · Match Score: '+d.match+'%';
+document.getElementById('dmta').innerHTML=meta;
+document.getElementById('dmta2').innerHTML=d.addr+' · '+d.docs;
+var trades=d.trades.split(',');
+var isMatch=parseInt(d.match)>=70;
+document.getElementById('dtgs').innerHTML=trades.map(function(t){return '<span class="dtg'+(isMatch?' dtg-m':'')+'">'+t.trim()+'</span>'}).join('');
+document.getElementById('detail').classList.add('show');
+}
+pins.forEach(function(p,i){p.onclick=function(){selectProject(i)}});
+document.getElementById('map').onclick=function(e){if(!e.target.closest('.pin')&&!e.target.closest('.lgnd')&&!e.target.closest('.rbdg')){backToList()}};
+goTo(0);
+</script>
+</body>
+</html>
