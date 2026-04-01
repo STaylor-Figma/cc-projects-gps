@@ -447,15 +447,22 @@ body {
   border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
   border-top: 1px solid var(--border-subtle);
   padding: var(--spacing-300) var(--spacing-500) var(--spacing-500);
+  visibility: hidden;
   transform: translateY(100%);
-  transition: transform var(--motion-slow) var(--motion-sheet);
+  transition: transform var(--motion-slow) var(--motion-sheet),
+              visibility 0s var(--motion-slow);
   z-index: 30;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.10);
   max-height: 390px;
   overflow-y: auto;
 }
 
-.project-card.visible { transform: translateY(0); }
+.project-card.visible {
+  visibility: visible;
+  transform: translateY(0);
+  transition: transform var(--motion-slow) var(--motion-sheet),
+              visibility 0s 0s;
+}
 
 .card-handle {
   width: 36px; height: 4px;
