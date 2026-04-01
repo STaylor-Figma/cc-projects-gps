@@ -1361,11 +1361,11 @@ body {
 .share-sheet {
   position: absolute;
   left: 0; right: 0;
-  bottom: 62px;
+  bottom: 0;
   background: var(--surface-primary);
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   border-top: 1px solid var(--border-subtle);
-  padding: var(--spacing-300) var(--spacing-500) var(--spacing-400);
+  padding: var(--spacing-300) var(--spacing-500) calc(var(--spacing-400) + 52px);
   z-index: 58;
   visibility: hidden;
   transform: translateY(100%);
