@@ -1358,12 +1358,24 @@ body {
   border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
   border-top: 1px solid var(--border-subtle);
   padding: var(--spacing-300) var(--spacing-500) var(--spacing-400);
-  z-index: 32;
+  z-index: 58;
   transform: translateY(100%);
   transition: transform var(--motion-slow) var(--motion-sheet);
   box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
 }
 .share-sheet.visible { transform: translateY(0); }
+
+/* Backdrop behind share sheet — click to dismiss */
+.share-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 57;
+  background: rgba(1,48,74,0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.share-sheet-backdrop.visible { opacity: 1; pointer-events: auto; }
 
 .share-sheet__handle {
   width: 36px; height: 4px;
@@ -1731,6 +1743,9 @@ body {
         </div>
       </div>
     </div>
+
+    <!-- Share sheet backdrop — click anywhere above sheet to dismiss -->
+    <div class="share-sheet-backdrop" id="shareSheetBackdrop" aria-hidden="true"></div>
 
     <!-- Share Sheet — slides up over project card -->
     <div class="share-sheet" id="shareSheet" role="dialog" aria-modal="true" aria-label="Share project">
@@ -2821,11 +2836,18 @@ function showActionToast(msg) {
    NAV DRAWER — hamburger menu wiring
    ═══════════════════════════════════════════════════════════════ */
 function openNavDrawer() {
+  /* Close share sheet first — only one panel at a time */
+  closeShareSheet();
+  document.getElementById('navConfirmOverlay').classList.remove('open');
   document.getElementById('navDrawerOverlay').classList.add('open');
   document.getElementById('navDrawerClose').focus();
 }
 function closeNavDrawer() {
   document.getElementById('navDrawerOverlay').classList.remove('open');
+}
+function closeShareSheet() {
+  hide('shareSheet');
+  document.getElementById('shareSheetBackdrop').classList.remove('visible');
 }
 
 document.querySelector('.app-nav .bp-header-btn[aria-label="Open navigation menu"]')
@@ -2837,7 +2859,7 @@ document.getElementById('navDrawerBackdrop').addEventListener('click', closeNavD
 document.addEventListener('keydown', function(e) {
   if (e.key !== 'Escape') return;
   if (document.getElementById('navDrawerOverlay').classList.contains('open')) closeNavDrawer();
-  if (document.getElementById('shareSheet').classList.contains('visible')) hide('shareSheet');
+  if (document.getElementById('shareSheet').classList.contains('visible')) closeShareSheet();
   if (document.getElementById('navConfirmOverlay').classList.contains('open')) {
     document.getElementById('navConfirmOverlay').classList.remove('open');
     _navConfirmProject = null;
@@ -2864,6 +2886,9 @@ document.querySelectorAll('.nav-drawer__item').forEach(function(item) {
    SHARE SHEET — wire up all actions
    ═══════════════════════════════════════════════════════════════ */
 function openShareSheet() {
+  /* Close nav drawer and confirm dialog first — only one panel at a time */
+  closeNavDrawer();
+  document.getElementById('navConfirmOverlay').classList.remove('open');
   var p = (activePhonePinIdx >= 0) ? PROJECTS[activePhonePinIdx] : null;
   if (p) {
     var nameEl = document.getElementById('shareSheetProjectName');
@@ -2872,6 +2897,7 @@ function openShareSheet() {
     if (linkEl) linkEl.textContent = 'app.constructconnect.com/project/' + (5100 + activePhonePinIdx) + '/p';
   }
   show('shareSheet');
+  document.getElementById('shareSheetBackdrop').classList.add('visible');
 }
 
 /* Share button inside project card */
@@ -2879,7 +2905,8 @@ var cardShareBtn = document.querySelector('#projectCard .bp-button[aria-label="S
 if (cardShareBtn) cardShareBtn.addEventListener('click', openShareSheet);
 
 /* Cancel / close */
-document.getElementById('shareSheetClose').addEventListener('click', function() { hide('shareSheet'); });
+document.getElementById('shareSheetClose').addEventListener('click', closeShareSheet);
+document.getElementById('shareSheetBackdrop').addEventListener('click', closeShareSheet);
 
 /* Copy link */
 document.getElementById('shareCopyBtn').addEventListener('click', function() {
@@ -2900,26 +2927,26 @@ document.getElementById('shareEmail').addEventListener('click', function() {
   var sub = encodeURIComponent('Project on ConstructConnect: ' + p.name);
   var bod = encodeURIComponent('I found a project on ConstructConnect that might interest you:\n\n' + p.name + '\n\nhttps://app.constructconnect.com/project/' + id + '/p?sourceType=3');
   window.location.href = 'mailto:?subject=' + sub + '&body=' + bod;
-  setTimeout(function() { hide('shareSheet'); }, 400);
+  setTimeout(closeShareSheet, 400);
 });
 
 /* SMS / Message */
 document.getElementById('shareText').addEventListener('click', function() {
   var id = 5100 + activePhonePinIdx;
   window.location.href = 'sms:?body=' + encodeURIComponent('https://app.constructconnect.com/project/' + id + '/p?sourceType=3');
-  setTimeout(function() { hide('shareSheet'); }, 400);
+  setTimeout(closeShareSheet, 400);
 });
 
 /* Send to Bid Center */
 document.getElementById('shareBidCenter').addEventListener('click', function() {
-  hide('shareSheet');
+  closeShareSheet();
   var p = (activePhonePinIdx >= 0) ? PROJECTS[activePhonePinIdx] : { name: 'Project' };
   showActionToast('&#10003;&nbsp;<strong>' + p.name + '</strong> sent to your Bid Center');
 });
 
 /* More (OS share sheet simulation) */
 document.getElementById('shareMore').addEventListener('click', function() {
-  hide('shareSheet');
+  closeShareSheet();
   showActionToast('Prototype: system share sheet would appear here');
 });
 
