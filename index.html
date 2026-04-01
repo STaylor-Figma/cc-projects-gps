@@ -441,12 +441,12 @@ body {
    ═══════════════════════════════════════════════════════════════════ */
 .project-card {
   position: absolute;
-  bottom: 62px;
+  bottom: 0;
   left: 0; right: 0;
   background: var(--surface-primary);
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-sm);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   border-top: 1px solid var(--border-subtle);
-  padding: var(--spacing-300) var(--spacing-500) var(--spacing-500);
+  padding: var(--spacing-300) var(--spacing-500) calc(var(--spacing-500) + 52px);
   visibility: hidden;
   transform: translateY(100%);
   transition: transform var(--motion-slow) var(--motion-sheet),
