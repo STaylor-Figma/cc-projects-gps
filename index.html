@@ -227,7 +227,7 @@ body {
   width: 120px; height: 28px;
   background: var(--primary-700);
   border-radius: 0 0 18px 18px;
-  margin: 163.5px auto 0;
+  margin: 0 auto;
   position: relative;
   z-index: 40;
 }
@@ -661,10 +661,8 @@ body {
    PERMISSION MODAL
    ═══════════════════════════════════════════════════════════════════ */
 .perm-overlay {
-  position: fixed;
-  top: 25px;
-  width: 375px;
-  height: 930.5px;
+  position: absolute;
+  inset: 0;
   background: rgba(1,48,74,0.55);
   z-index: 30;
   display: flex;
@@ -745,7 +743,7 @@ body {
   background: var(--primary-50);
   z-index: 9999;
   position: absolute;
-  top: 878.5px;
+  bottom: 0;
   left: 0; right: 0;
 }
 
@@ -1518,10 +1516,8 @@ body {
 
 /* ── Leave-app confirmation sheet ── */
 .nav-confirm-overlay {
-  position: fixed;
-  top: 138px;
-  width: 375px;
-  height: 677px;
+  position: absolute;
+  inset: 0;
   background: rgba(1,48,74,0.48);
   backdrop-filter: blur(3px);
   z-index: 58;
@@ -1534,9 +1530,9 @@ body {
   pointer-events: auto;
 }
 .nav-confirm-card {
-  position: fixed;
-  bottom: 38px;
-  width: 375px;
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
   height: auto;
   background: var(--surface-primary);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
