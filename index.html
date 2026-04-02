@@ -215,6 +215,8 @@ body {
   overflow: hidden;
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
   box-shadow:
     0 2px 4px rgba(0,0,0,0.04),
     0 8px 16px rgba(0,0,0,0.08),
@@ -225,7 +227,7 @@ body {
   width: 120px; height: 28px;
   background: var(--primary-700);
   border-radius: 0 0 18px 18px;
-  margin: 0 auto;
+  margin: 163.5px auto 0;
   position: relative;
   z-index: 40;
 }
@@ -247,7 +249,7 @@ body {
 
 /* ── App Nav (Blueprint Header organism) ── */
 .app-nav {
-  height: 52px;
+  height: 40px;
   background: var(--primary-700);
   display: flex;
   align-items: center;
@@ -289,9 +291,10 @@ body {
    PHONE MAP AREA — Leaflet host
    ═══════════════════════════════════════════════════════════════════ */
 .map-area {
-  position: relative;
-  /* 740 - 28(notch) - 20(status) - 52(nav) - 52(tabbar) = 588 */
-  height: 588px;
+  position: absolute;
+  top: 237px;
+  height: 641.5px;
+  left: 0; right: 0;
   overflow: hidden;
   z-index: 1;
 }
@@ -658,8 +661,10 @@ body {
    PERMISSION MODAL
    ═══════════════════════════════════════════════════════════════════ */
 .perm-overlay {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 25px;
+  width: 375px;
+  height: 930.5px;
   background: rgba(1,48,74,0.55);
   z-index: 30;
   display: flex;
@@ -738,8 +743,10 @@ body {
   display: flex;
   border-top: 1.5px solid var(--primary-100);
   background: var(--primary-50);
-  z-index: 25;
-  position: relative;
+  z-index: 9999;
+  position: absolute;
+  top: 878.5px;
+  left: 0; right: 0;
 }
 
 .bp-tab {
@@ -1511,8 +1518,10 @@ body {
 
 /* ── Leave-app confirmation sheet ── */
 .nav-confirm-overlay {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 138px;
+  width: 375px;
+  height: 677px;
   background: rgba(1,48,74,0.48);
   backdrop-filter: blur(3px);
   z-index: 58;
@@ -1525,10 +1534,10 @@ body {
   pointer-events: auto;
 }
 .nav-confirm-card {
-  position: absolute;
-  left: 0; right: 0;
-  bottom: 0;
-  height: 300px;
+  position: fixed;
+  bottom: 38px;
+  width: 375px;
+  height: auto;
   background: var(--surface-primary);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   border-top: 1px solid var(--border-subtle);
