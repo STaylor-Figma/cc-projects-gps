@@ -291,10 +291,8 @@ body {
    PHONE MAP AREA — Leaflet host
    ═══════════════════════════════════════════════════════════════════ */
 .map-area {
-  position: absolute;
-  top: 237px;
-  height: 641.5px;
-  left: 0; right: 0;
+  position: relative;
+  flex: 1;
   overflow: hidden;
   z-index: 1;
 }
@@ -742,9 +740,8 @@ body {
   border-top: 1.5px solid var(--primary-100);
   background: var(--primary-50);
   z-index: 9999;
-  position: absolute;
-  bottom: 0;
-  left: 0; right: 0;
+  position: relative;
+  flex-shrink: 0;
 }
 
 .bp-tab {
