@@ -222,15 +222,20 @@ body {
 }
 
 .phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 120px; height: 28px;
   background: var(--primary-700);
   border-radius: 0 0 18px 18px;
-  margin: 0 auto;
-  position: relative;
   z-index: 40;
 }
 
 .phone-status-bar {
+  position: absolute;
+  top: 28px;
+  left: 0; right: 0;
   height: 20px;
   background: var(--primary-700);
   display: flex;
@@ -241,7 +246,6 @@ body {
   font-weight: var(--font-weight-semibold);
   color: rgba(255,255,255,0.90);
   letter-spacing: 0.2px;
-  position: relative;
   z-index: 5;
 }
 
