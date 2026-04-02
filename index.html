@@ -1533,6 +1533,7 @@ body {
   border-top: 1px solid var(--border-subtle);
   padding: var(--spacing-300) var(--spacing-500) var(--spacing-500);
   z-index: 59;
+  overflow: hidden;
   visibility: hidden;
   transform: translateY(100%);
   transition: transform var(--motion-slow) var(--motion-sheet),
@@ -2416,6 +2417,7 @@ function openMaps(p) {
   /* Dismiss everything else before showing confirm */
   closeNavDrawer();
   closeShareSheet();
+  hide('projectCard');
   _navConfirmProject = p;
   document.getElementById('navConfirmAddr').textContent = p.addr;
   document.getElementById('navConfirmOverlay').classList.add('open');
