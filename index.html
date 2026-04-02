@@ -1516,8 +1516,6 @@ body {
   background: rgba(1,48,74,0.48);
   backdrop-filter: blur(3px);
   z-index: 45;
-  display: flex;
-  flex-direction: column;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.22s ease;
@@ -1526,16 +1524,25 @@ body {
   opacity: 1;
   pointer-events: auto;
 }
-.nav-confirm-spacer { flex: 1; min-height: 0; }
 .nav-confirm-card {
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  z-index: 46;
   background: var(--surface-primary);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding: 12px 20px 28px;
+  visibility: hidden;
   transform: translateY(100%);
-  transition: transform var(--motion-slow) var(--motion-sheet);
+  transition: transform var(--motion-slow) var(--motion-sheet),
+              visibility 0s var(--motion-slow);
 }
-.nav-confirm-overlay.open .nav-confirm-card { transform: translateY(0); }
+.nav-confirm-overlay.open + .nav-confirm-card {
+  visibility: visible;
+  transform: translateY(0);
+  transition: transform var(--motion-slow) var(--motion-sheet),
+              visibility 0s 0s;
+}
 .nav-confirm-handle {
   width: 36px; height: 4px;
   background: var(--neutral-300);
@@ -1610,7 +1617,7 @@ body {
 <!-- ════════════════ PHONE VIEW ════════════════ -->
 <div id="phoneView">
   <h1 class="prototype-heading">CCPI &mdash; Projects Near Me</h1>
-  <p class="prototype-subtitle">Mark&rsquo;s Workflow &middot; Steps 1&ndash;4 &middot; Phone &middot; v5</p>
+  <p class="prototype-subtitle">Mark&rsquo;s Workflow &middot; Steps 1&ndash;4 &middot; Phone &middot; v6</p>
 
   <div class="step-nav" id="stepNav" role="tablist" aria-label="Workflow steps"></div>
   <p class="step-label" id="stepLabel" aria-live="polite"></p>
@@ -1933,28 +1940,27 @@ body {
       </button>
     </nav>
 
-    <!-- Leave-app confirmation sheet — shown before opening Maps -->
-    <div class="nav-confirm-overlay" id="navConfirmOverlay" role="dialog" aria-modal="true" aria-labelledby="navConfirmTitle">
-      <div class="nav-confirm-spacer" aria-hidden="true"></div>
-      <div class="nav-confirm-card">
-        <div class="nav-confirm-handle" aria-hidden="true"></div>
-        <div class="nav-confirm-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M2 11L16.5 5.5 12.5 18 10.5 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+    <!-- Leave-app confirmation: backdrop overlay -->
+    <div class="nav-confirm-overlay" id="navConfirmOverlay" aria-hidden="true"></div>
+    <!-- Leave-app confirmation: card (sibling of overlay, NOT inside it) -->
+    <div class="nav-confirm-card" role="dialog" aria-modal="true" aria-labelledby="navConfirmTitle">
+      <div class="nav-confirm-handle" aria-hidden="true"></div>
+      <div class="nav-confirm-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M2 11L16.5 5.5 12.5 18 10.5 12z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="nav-confirm-title" id="navConfirmTitle">Open in Maps?</div>
+      <div class="nav-confirm-body">You'll leave the app and get directions in Google Maps</div>
+      <div class="nav-confirm-addr" id="navConfirmAddr"></div>
+      <div class="nav-confirm-actions">
+        <button class="bp-button bp-button--default" id="navConfirmCancel" type="button">Cancel</button>
+        <button class="bp-button bp-button--primary" id="navConfirmOpen" type="button">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+            <path d="M1.5 6.5L11 3 7.5 11.5 6 7.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
           </svg>
-        </div>
-        <div class="nav-confirm-title" id="navConfirmTitle">Open in Maps?</div>
-        <div class="nav-confirm-body">You'll leave the app and get directions in Google Maps</div>
-        <div class="nav-confirm-addr" id="navConfirmAddr"></div>
-        <div class="nav-confirm-actions">
-          <button class="bp-button bp-button--default" id="navConfirmCancel" type="button">Cancel</button>
-          <button class="bp-button bp-button--primary" id="navConfirmOpen" type="button">
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-              <path d="M1.5 6.5L11 3 7.5 11.5 6 7.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-            </svg>
-            Open Maps
-          </button>
-        </div>
+          Open Maps
+        </button>
       </div>
     </div>
 
