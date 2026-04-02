@@ -214,6 +214,8 @@ body {
   border-radius: 40px;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
   isolation: isolate;
   box-shadow:
     0 2px 4px rgba(0,0,0,0.04),
@@ -222,20 +224,17 @@ body {
 }
 
 .phone-notch {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  flex-shrink: 0;
   width: 120px; height: 28px;
   background: var(--primary-700);
   border-radius: 0 0 18px 18px;
-  z-index: 10002;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
 .phone-status-bar {
-  position: absolute;
-  top: 28px;
-  left: 0; right: 0;
+  flex-shrink: 0;
   height: 20px;
   background: var(--primary-700);
   display: flex;
@@ -246,14 +245,13 @@ body {
   font-weight: var(--font-weight-semibold);
   color: rgba(255,255,255,0.90);
   letter-spacing: 0.2px;
-  z-index: 10001;
+  position: relative;
+  z-index: 2;
 }
 
 /* ── App Nav (Blueprint Header organism) ── */
 .app-nav {
-  position: absolute;
-  top: 48px;
-  left: 0; right: 0;
+  flex-shrink: 0;
   height: 40px;
   background: var(--primary-700);
   display: flex;
@@ -261,7 +259,8 @@ body {
   justify-content: space-between;
   padding: 0 var(--spacing-400);
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  z-index: 10000;
+  position: relative;
+  z-index: 2;
 }
 
 .app-nav__title {
@@ -295,10 +294,8 @@ body {
    PHONE MAP AREA — Leaflet host
    ═══════════════════════════════════════════════════════════════════ */
 .map-area {
-  position: absolute;
-  top: 88px;
-  left: 0; right: 0;
-  bottom: 52px;
+  flex: 1;
+  position: relative;
   overflow: hidden;
   z-index: 1;
 }
@@ -741,14 +738,13 @@ body {
    primary-50 background per design spec
    ═══════════════════════════════════════════════════════════════════ */
 .tab-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0; right: 0;
+  flex-shrink: 0;
   height: 52px;
   display: flex;
   border-top: 1.5px solid var(--primary-100);
   background: var(--primary-50);
-  z-index: 9999;
+  position: relative;
+  z-index: 2;
 }
 
 .bp-tab {
