@@ -107,6 +107,7 @@ body {
   align-items: center;
   min-height: 100vh;
   padding: 16px var(--spacing-400) 40px;
+  overflow-x: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1523,13 +1524,13 @@ body {
 }
 .nav-confirm-card {
   position: absolute;
-  bottom: 52px;
+  bottom: 0;
   left: 0; right: 0;
   height: auto;
   background: var(--surface-primary);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   border-top: 1px solid var(--border-subtle);
-  padding: var(--spacing-300) var(--spacing-500) var(--spacing-500);
+  padding: var(--spacing-300) var(--spacing-500) calc(var(--spacing-500) + 52px);
   z-index: 59;
   overflow: hidden;
   visibility: hidden;
@@ -2419,7 +2420,7 @@ function openMaps(p) {
   _navConfirmProject = p;
   document.getElementById('navConfirmAddr').textContent = p.addr;
   document.getElementById('navConfirmOverlay').classList.add('open');
-  document.getElementById('navConfirmCancel').focus();
+  document.getElementById('navConfirmCancel').focus({ preventScroll: true });
 }
 
 function _doOpenMaps(p) {
@@ -2874,7 +2875,7 @@ function openNavDrawer() {
   closeShareSheet();
   document.getElementById('navConfirmOverlay').classList.remove('open');
   document.getElementById('navDrawerOverlay').classList.add('open');
-  document.getElementById('navDrawerClose').focus();
+  document.getElementById('navDrawerClose').focus({ preventScroll: true });
 }
 function closeNavDrawer() {
   document.getElementById('navDrawerOverlay').classList.remove('open');
